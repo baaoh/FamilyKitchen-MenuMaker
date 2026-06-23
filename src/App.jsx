@@ -18,9 +18,35 @@ import {
   Info,
   Layers,
   ArrowUpDown,
-  BookOpen
+  BookOpen,
+  Lock,
+  Unlock,
+  Key
 } from 'lucide-react';
 import { PAGE_SIZES, PRESET_THEMES, INITIAL_MENU_DATA } from './templates';
+
+// --- Cryptographic Hash Helper (Web Crypto SHA-256 with shift-hash fallback for HTTP) ---
+const hashPasscode = async (text) => {
+  if (!text) return '';
+  if (window.crypto && crypto.subtle) {
+    try {
+      const msgBuffer = new TextEncoder().encode(text);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) {
+      // Fallback below
+    }
+  }
+  // Simple polynomial rolling hash fallback for unencrypted HTTP deployment
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    const char = text.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return 'fallback_' + Math.abs(hash).toString(16);
+};
 
 export default function App() {
   // --- STATE ---
@@ -49,7 +75,9 @@ export default function App() {
       customBg: '',
       customText: '',
       customAccent: '',
-      customBorder: ''
+      customBorder: '',
+      textAlign: 'left', // 'left' | 'center'
+      passcodeHash: '' // Empty string if unlocked
     };
   });
 
@@ -59,6 +87,26 @@ export default function App() {
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   
+  // Security Locks
+  const [isLocked, setIsLocked] = useState(() => {
+    // If settings are stored in localstorage with a passcode, start locked
+    try {
+      const savedSettings = localStorage.getItem('menu_designer_settings');
+      if (savedSettings) {
+        const parsed = JSON.parse(savedSettings);
+        return !!parsed.passcodeHash;
+      }
+    } catch(e) {}
+    return false;
+  });
+  const [typedPasscode, setTypedPasscode] = useState('');
+  const [lockError, setLockError] = useState('');
+  
+  // Security setup states (inputs in settings tab)
+  const [newPasscode, setNewPasscode] = useState('');
+  const [confirmPasscode, setConfirmPasscode] = useState('');
+  const [passcodeError, setPasscodeError] = useState('');
+
   const previewRef = useRef(null);
   const pageRef = useRef(null);
 
@@ -73,11 +121,11 @@ export default function App() {
 
   // --- AUTOMATIC OVERFLOW DETECTOR ---
   useEffect(() => {
+    if (isLocked) return;
     const checkOverflow = () => {
       if (pageRef.current) {
         const element = pageRef.current;
         // Determine if content overflows vertically.
-        // We compare scrollHeight to clientHeight. Because of rounding differences, we add a 2px threshold.
         const hasOverflow = element.scrollHeight > element.clientHeight + 2;
         setIsOverflowing(hasOverflow);
       }
@@ -91,12 +139,61 @@ export default function App() {
       clearTimeout(timer);
       window.removeEventListener('resize', checkOverflow);
     };
-  }, [menuData, settings, scale]);
+  }, [menuData, settings, scale, isLocked]);
 
   // Flash messages helper
   const showToast = (msg) => {
     setSuccessMessage(msg);
     setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
+  // --- SECURITY LOGIN VERIFICATION ---
+  const handleUnlock = async (e) => {
+    e.preventDefault();
+    setLockError('');
+    if (!typedPasscode) return;
+
+    const enteredHash = await hashPasscode(typedPasscode);
+    if (enteredHash === settings.passcodeHash) {
+      setIsLocked(false);
+      setTypedPasscode('');
+      showToast('Welcome back! App unlocked.');
+    } else {
+      setLockError('Incorrect passcode. Please try again.');
+    }
+  };
+
+  const enablePasscode = async (e) => {
+    e.preventDefault();
+    setPasscodeError('');
+    
+    if (!newPasscode) {
+      setPasscodeError('Passcode cannot be empty.');
+      return;
+    }
+    if (newPasscode !== confirmPasscode) {
+      setPasscodeError('Passcodes do not match.');
+      return;
+    }
+
+    const hashed = await hashPasscode(newPasscode);
+    setSettings(prev => ({
+      ...prev,
+      passcodeHash: hashed
+    }));
+    setNewPasscode('');
+    setConfirmPasscode('');
+    showToast('Passcode protection enabled successfully!');
+  };
+
+  const removePasscode = () => {
+    if (window.confirm('Are you sure you want to disable password protection? Anyone will be able to edit.')) {
+      setSettings(prev => ({
+        ...prev,
+        passcodeHash: ''
+      }));
+      showToast('Passcode protection disabled.');
+    }
   };
 
   // --- MENU DATA MUTATIONS ---
@@ -266,7 +363,11 @@ export default function App() {
           setMenuData(parsed.menuData);
         }
         if (parsed.settings) {
-          setSettings(parsed.settings);
+          // preserve security settings during template loads
+          setSettings(prev => ({
+            ...parsed.settings,
+            passcodeHash: prev.passcodeHash
+          }));
         }
         showToast('Menu imported successfully!');
       } catch (err) {
@@ -279,7 +380,7 @@ export default function App() {
   const resetToDefault = () => {
     if (window.confirm('Are you sure you want to reset all your items and layout overrides to the default?')) {
       setMenuData(INITIAL_MENU_DATA);
-      setSettings({
+      setSettings(prev => ({
         pageSize: 'a4',
         theme: 'elegant',
         columns: 1,
@@ -297,8 +398,10 @@ export default function App() {
         customBg: '',
         customText: '',
         customAccent: '',
-        customBorder: ''
-      });
+        customBorder: '',
+        textAlign: 'left',
+        passcodeHash: prev.passcodeHash // Keep the password lock active
+      }));
       showToast('Reset complete');
     }
   };
@@ -314,6 +417,7 @@ export default function App() {
       setSettings(prev => ({
         ...prev,
         theme: themeId,
+        textAlign: preset.styles['--menu-align'] || 'left',
         // Reset color overrides to let theme defaults apply
         customBg: '',
         customText: '',
@@ -342,6 +446,9 @@ export default function App() {
     
     baseStyles['--border-style'] = settings.borderStyle;
     baseStyles['--border-width'] = `${settings.borderWidth}px`;
+    
+    // Inject active alignment
+    baseStyles['--menu-align'] = settings.textAlign || baseStyles['--menu-align'] || 'left';
 
     // Apply color overrides if set
     if (settings.customBg) baseStyles['--menu-bg'] = settings.customBg;
@@ -355,6 +462,100 @@ export default function App() {
   const currentSizeObj = PAGE_SIZES.find(s => s.id === settings.pageSize) || PAGE_SIZES[0];
   const activeThemeObj = PRESET_THEMES.find(t => t.id === settings.theme) || PRESET_THEMES[0];
 
+  // ==========================================
+  // LOCK SCREEN GATE
+  // ==========================================
+  if (isLocked) {
+    return (
+      <div style={{
+        height: '100vh',
+        width: '100vw',
+        background: 'radial-gradient(circle at center, #18181b 0%, #09090b 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: "'Inter', sans-serif",
+        color: '#f4f4f5'
+      }}>
+        <div style={{
+          width: '100%',
+          maxWidth: '400px',
+          padding: '40px 30px',
+          background: 'rgba(20, 20, 25, 0.65)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '16px',
+          backdropFilter: 'blur(16px)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(249, 115, 22, 0.1)',
+          textAlign: 'center'
+        }} className="animate-fade-in">
+          <div style={{
+            display: 'inline-flex',
+            padding: '16px',
+            background: 'rgba(249, 115, 22, 0.1)',
+            borderRadius: '50%',
+            color: '#f97316',
+            marginBottom: '20px',
+            border: '1px solid rgba(249, 115, 22, 0.25)'
+          }}>
+            <Lock size={32} />
+          </div>
+          
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '8px', letterSpacing: '-0.025em' }}>
+            Menu Designer Locked
+          </h2>
+          <p style={{ fontSize: '0.85rem', color: '#a1a1aa', marginBottom: '24px', lineHeight: 1.4 }}>
+            Please enter your password passcode to gain editor access.
+          </p>
+
+          <form onSubmit={handleUnlock}>
+            <div style={{ marginBottom: '16px' }}>
+              <input 
+                type="password" 
+                className="form-input" 
+                placeholder="••••••••" 
+                value={typedPasscode}
+                onChange={(e) => setTypedPasscode(e.target.value)}
+                autoFocus
+                style={{
+                  textAlign: 'center',
+                  fontSize: '1.2rem',
+                  letterSpacing: '0.3em',
+                  padding: '12px',
+                  borderRadius: '10px'
+                }}
+              />
+            </div>
+
+            {lockError && (
+              <div style={{
+                color: '#f87171',
+                background: 'rgba(239, 68, 68, 0.1)',
+                padding: '10px',
+                borderRadius: '8px',
+                fontSize: '0.75rem',
+                marginBottom: '16px',
+                border: '1px solid rgba(239, 68, 68, 0.15)'
+              }}>
+                {lockError}
+              </div>
+            )}
+
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px' }}>
+              Unlock Dashboard
+            </button>
+          </form>
+          
+          <div style={{ marginTop: '24px', fontSize: '0.7rem', color: '#71717a' }}>
+            Hint: If passcode is forgotten, clear browser cache (clears data as well). Use backup JSON files.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // CORE DASHBOARD EDITOR RENDER
+  // ==========================================
   return (
     <div className="app-container">
       {/* HEADER BAR */}
@@ -362,7 +563,7 @@ export default function App() {
         <div className="header-logo">
           <BookOpen className="logo-icon" size={24} />
           <h1>Menu Designer Pro</h1>
-          <span>v1.0</span>
+          <span>v1.1</span>
         </div>
         
         {successMessage && (
@@ -383,6 +584,12 @@ export default function App() {
         )}
 
         <div className="header-actions">
+          {settings.passcodeHash && (
+            <button className="btn btn-secondary btn-sm" onClick={() => setIsLocked(true)} title="Lock Editor screen">
+              <Lock size={14} /> Lock Dashboard
+            </button>
+          )}
+
           <button className="btn btn-secondary btn-sm" onClick={resetToDefault} title="Clear and load default template">
             <RotateCcw size={14} /> Reset
           </button>
@@ -420,7 +627,7 @@ export default function App() {
               className={`tab-btn ${activeTab === 'export' ? 'active' : ''}`}
               onClick={() => setActiveTab('export')}
             >
-              <Download size={16} /> Save / Load
+              <Download size={16} /> Save / Lock
             </button>
           </div>
 
@@ -555,7 +762,7 @@ export default function App() {
                                   <textarea 
                                     className="form-input" 
                                     value={item.description} 
-                                    placeholder="Description / Ingredients"
+                                    placeholder="Description / Ingredients / Translation"
                                     onChange={(e) => updateItem(cat.id, item.id, 'description', e.target.value)}
                                   />
                                 </div>
@@ -654,6 +861,19 @@ export default function App() {
                     </select>
                   </div>
 
+                  {/* Text Alignment Selection */}
+                  <div className="form-group">
+                    <label className="form-label">Text Alignment Style</label>
+                    <select 
+                      className="select-input" 
+                      value={settings.textAlign || 'left'}
+                      onChange={(e) => setSettings(prev => ({ ...prev, textAlign: e.target.value }))}
+                    >
+                      <option value="left">Left & Right Align (Drinks Style)</option>
+                      <option value="center">Centered Stacked (Food Style)</option>
+                    </select>
+                  </div>
+
                   {/* Columns Grid Layout */}
                   <div className="form-group">
                     <label className="form-label">Category Grid Columns</label>
@@ -668,18 +888,20 @@ export default function App() {
                     </select>
                   </div>
 
-                  {/* Leader dots Toggle */}
-                  <div className="toggle-group">
-                    <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>Price-to-Name Leader Dots</span>
-                    <label className="toggle-switch">
-                      <input 
-                        type="checkbox" 
-                        checked={settings.showDots}
-                        onChange={(e) => setSettings(prev => ({ ...prev, showDots: e.target.checked }))}
-                      />
-                      <span className="slider-toggle"></span>
-                    </label>
-                  </div>
+                  {/* Leader dots Toggle (Only valid for left align) */}
+                  {settings.textAlign !== 'center' && (
+                    <div className="toggle-group">
+                      <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>Price-to-Name Leader Dots</span>
+                      <label className="toggle-switch">
+                        <input 
+                          type="checkbox" 
+                          checked={settings.showDots}
+                          onChange={(e) => setSettings(prev => ({ ...prev, showDots: e.target.checked }))}
+                        />
+                        <span className="slider-toggle"></span>
+                      </label>
+                    </div>
+                  )}
 
                   {/* Border Style Selection */}
                   <div className="form-group">
@@ -929,17 +1151,17 @@ export default function App() {
               </div>
             )}
 
-            {/* TABS 4: SAVE / LOAD */}
+            {/* TABS 4: SAVE / LOCK */}
             {activeTab === 'export' && (
               <div className="panel-section animate-fade-in">
                 <div className="panel-title">
                   <Download size={16} /> Local File Backups
                 </div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: 1.4 }}>
-                  Since data is saved locally on this browser, use backups to export your menus as files. This lets you import them later, manage multiple versions, or share them.
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '12px', lineHeight: 1.4 }}>
+                  Export your menus as files. This lets you import them later, manage multiple versions, or share them.
                 </p>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
                   <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'flex-start' }} onClick={exportJSON}>
                     <Download size={16} /> Export Menu to File (.json)
                   </button>
@@ -963,6 +1185,60 @@ export default function App() {
                     </label>
                   </div>
                 </div>
+
+                {/* APP SECURITY PASSCODE SECTION */}
+                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+                  <div className="panel-title">
+                    <Lock size={16} /> App Passcode Protection
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '12px', lineHeight: 1.4 }}>
+                    Set a passcode to lock the editor dashboard. This protects your menus from accidental edits when hosted online on GitHub Pages.
+                  </p>
+
+                  {settings.passcodeHash ? (
+                    <div style={{ background: 'rgba(249, 115, 22, 0.05)', border: '1px solid rgba(249, 115, 22, 0.2)', padding: '14px', borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f97316', fontSize: '0.8rem', fontWeight: 600, marginBottom: '10px' }}>
+                        <Lock size={14} /> Active Hashed Lock Protected
+                      </div>
+                      <button className="btn btn-danger btn-sm" style={{ width: '100%' }} onClick={removePasscode}>
+                        Disable Password Protection
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={enablePasscode} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.7rem' }}>New Passcode</label>
+                        <input 
+                          type="password" 
+                          className="form-input" 
+                          placeholder="Type password..." 
+                          value={newPasscode}
+                          onChange={(e) => setNewPasscode(e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.7rem' }}>Confirm Passcode</label>
+                        <input 
+                          type="password" 
+                          className="form-input" 
+                          placeholder="Re-type password..." 
+                          value={confirmPasscode}
+                          onChange={(e) => setConfirmPasscode(e.target.value)}
+                        />
+                      </div>
+
+                      {passcodeError && (
+                        <div style={{ color: '#ef4444', fontSize: '0.7rem', padding: '4px' }}>
+                          {passcodeError}
+                        </div>
+                      )}
+
+                      <button type="submit" className="btn btn-secondary btn-sm" style={{ alignSelf: 'flex-end', marginTop: '6px' }}>
+                        <Key size={12} /> Set Lock Passcode
+                      </button>
+                    </form>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -977,6 +1253,8 @@ export default function App() {
               <span className="toolbar-badge">{currentSizeObj.name}</span>
               <span>Theme:</span>
               <span className="toolbar-badge">{activeThemeObj.name}</span>
+              <span>Align:</span>
+              <span className="toolbar-badge" style={{ textTransform: 'capitalize' }}>{settings.textAlign || 'Left'}</span>
             </div>
 
             <div className="toolbar-controls">
@@ -1034,7 +1312,9 @@ export default function App() {
                     }}
                   >
                     {menuData.categories.map((category) => (
-                      <section key={category.id} className="menu-category-section">
+                      <section key={category.id} className="menu-category-section" style={{
+                        textAlign: settings.textAlign === 'center' ? 'center' : 'left'
+                      }}>
                         {/* Category Header */}
                         <div className="menu-category-header">
                           <h3 className="menu-category-name">{category.name}</h3>
@@ -1056,19 +1336,34 @@ export default function App() {
                         {/* Items Grid */}
                         <div className="menu-items-grid">
                           {category.items.map((item) => (
-                            <div key={item.id} className="menu-item-row">
-                              <div className="item-main-line">
-                                <div className="item-name-group">
+                            settings.textAlign === 'center' ? (
+                              // Centered Stacked Layout (Canva Food Style)
+                              <div key={item.id} className="menu-item-row" style={{ alignItems: 'center', textAlign: 'center', marginBottom: '4px' }}>
+                                <div className="item-name-group" style={{ justifyContent: 'center' }}>
                                   <span className="item-name">{item.name}</span>
-                                  {item.badge && <span className="item-badge">{item.badge}</span>}
+                                  {item.badge && <span className="item-badge" style={{ marginLeft: '6px' }}>{item.badge}</span>}
                                 </div>
-                                {settings.showDots && <div className="price-leader-dots"></div>}
-                                <span className="item-price">{item.price}</span>
+                                {item.description && (
+                                  <p className="item-description" style={{ marginTop: '2px', marginBottom: '4px' }}>{item.description}</p>
+                                )}
+                                <span className="item-price" style={{ color: 'var(--menu-accent)', fontWeight: 700 }}>{item.price}</span>
                               </div>
-                              {item.description && (
-                                <p className="item-description">{item.description}</p>
-                              )}
-                            </div>
+                            ) : (
+                              // Left / Right Spacing Layout (Canva Drinks Style)
+                              <div key={item.id} className="menu-item-row">
+                                <div className="item-main-line">
+                                  <div className="item-name-group">
+                                    <span className="item-name">{item.name}</span>
+                                    {item.badge && <span className="item-badge">{item.badge}</span>}
+                                  </div>
+                                  {settings.showDots && <div className="price-leader-dots"></div>}
+                                  <span className="item-price">{item.price}</span>
+                                </div>
+                                {item.description && (
+                                  <p className="item-description">{item.description}</p>
+                                )}
+                              </div>
+                            )
                           ))}
                         </div>
                       </section>
@@ -1137,7 +1432,9 @@ export default function App() {
                 }}
               >
                 {menuData.categories.map((category) => (
-                  <section key={category.id} className="menu-category-section">
+                  <section key={category.id} className="menu-category-section" style={{
+                    textAlign: settings.textAlign === 'center' ? 'center' : 'left'
+                  }}>
                     <div className="menu-category-header">
                       <h3 className="menu-category-name">{category.name}</h3>
                       {category.description && <p className="menu-category-desc">{category.description}</p>}
@@ -1155,19 +1452,34 @@ export default function App() {
 
                     <div className="menu-items-grid">
                       {category.items.map((item) => (
-                        <div key={item.id} className="menu-item-row">
-                          <div className="item-main-line">
-                            <div className="item-name-group">
+                        settings.textAlign === 'center' ? (
+                          // Centered Stacked Layout (Canva Food Style)
+                          <div key={item.id} className="menu-item-row" style={{ alignItems: 'center', textAlign: 'center', marginBottom: '4px' }}>
+                            <div className="item-name-group" style={{ justifyContent: 'center' }}>
                               <span className="item-name">{item.name}</span>
-                              {item.badge && <span className="item-badge">{item.badge}</span>}
+                              {item.badge && <span className="item-badge" style={{ marginLeft: '6px' }}>{item.badge}</span>}
                             </div>
-                            {settings.showDots && <div className="price-leader-dots"></div>}
-                            <span className="item-price">{item.price}</span>
+                            {item.description && (
+                              <p className="item-description" style={{ marginTop: '2px', marginBottom: '4px' }}>{item.description}</p>
+                            )}
+                            <span className="item-price" style={{ color: 'var(--menu-accent)', fontWeight: 700 }}>{item.price}</span>
                           </div>
-                          {item.description && (
-                            <p className="item-description">{item.description}</p>
-                          )}
-                        </div>
+                        ) : (
+                          // Left / Right Spacing Layout (Canva Drinks Style)
+                          <div key={item.id} className="menu-item-row">
+                            <div className="item-main-line">
+                              <div className="item-name-group">
+                                <span className="item-name">{item.name}</span>
+                                {item.badge && <span className="item-badge">{item.badge}</span>}
+                              </div>
+                              {settings.showDots && <div className="price-leader-dots"></div>}
+                              <span className="item-price">{item.price}</span>
+                            </div>
+                            {item.description && (
+                              <p className="item-description">{item.description}</p>
+                            )}
+                          </div>
+                        )
                       ))}
                     </div>
                   </section>

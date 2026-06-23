@@ -7,14 +7,64 @@ export const PAGE_SIZES = [
 
 export const PRESET_THEMES = [
   {
+    id: 'centered-zen',
+    name: 'Zen Centered (Food)',
+    headerFont: "'Montserrat', sans-serif",
+    bodyFont: "'Cormorant Garamond', serif",
+    accentColor: '#71717a',
+    textColor: '#000000',
+    backgroundColor: '#ffffff',
+    borderColor: '#e5e5e5',
+    dividerStyle: 'none',
+    description: 'Clean centered typography based on the Canva food menu. High-contrast bold headers with soft italic translation subtitles.',
+    styles: {
+      '--menu-header-font': "'Montserrat', sans-serif",
+      '--menu-body-font': "'Cormorant Garamond', serif",
+      '--menu-accent': '#555555',
+      '--menu-text': '#111111',
+      '--menu-bg': '#ffffff',
+      '--menu-border': '#ffffff',
+      '--menu-category-transform': 'none',
+      '--menu-category-weight': '700',
+      '--menu-item-name-weight': '700',
+      '--menu-divider-height': '0px',
+      '--menu-align': 'center'
+    }
+  },
+  {
+    id: 'modern-drinks',
+    name: 'Canva Drinks Layout',
+    headerFont: "'Montserrat', sans-serif",
+    bodyFont: "'Montserrat', sans-serif",
+    accentColor: '#71717a',
+    textColor: '#000000',
+    backgroundColor: '#ffffff',
+    borderColor: '#ffffff',
+    dividerStyle: 'none',
+    description: 'Modern sans-serif typography with clean spacing and left/right alignment. Directly based on the Canva drinks menu.',
+    styles: {
+      '--menu-header-font': "'Montserrat', sans-serif",
+      '--menu-body-font': "'Montserrat', sans-serif",
+      '--menu-accent': '#6b7280',
+      '--menu-text': '#111111',
+      '--menu-bg': '#ffffff',
+      '--menu-border': '#ffffff',
+      '--menu-category-transform': 'none',
+      '--menu-category-weight': '800',
+      '--menu-item-name-weight': '700',
+      '--menu-divider-height': '0px',
+      '--menu-align': 'left'
+    }
+  },
+  {
     id: 'elegant',
     name: 'Elegant Bistro',
     headerFont: "'Playfair Display', serif",
     bodyFont: "'Cormorant Garamond', serif",
     accentColor: '#c5a880', // Soft Gold
     textColor: '#1a1a1a',
-    backgroundColor: '#ffffff',
-    borderColor: '#e5e5e5',
+    backgroundColor: '#fcfbfa',
+    borderColor: '#e0d8cc',
     dividerStyle: 'ornament',
     description: 'Sophisticated typography, gold accents, and classic serif elegance. Perfect for upscale restaurants.',
     styles: {
@@ -27,7 +77,8 @@ export const PRESET_THEMES = [
       '--menu-category-transform': 'uppercase',
       '--menu-category-weight': '700',
       '--menu-item-name-weight': '600',
-      '--menu-divider-height': '1px'
+      '--menu-divider-height': '1px',
+      '--menu-align': 'left'
     }
   },
   {
@@ -51,32 +102,8 @@ export const PRESET_THEMES = [
       '--menu-category-transform': 'uppercase',
       '--menu-category-weight': '800',
       '--menu-item-name-weight': '700',
-      '--menu-divider-height': '2px'
-    }
-  },
-  {
-    id: 'rustic',
-    name: 'Rustic Tavern',
-    headerFont: "'Alex Brush', cursive",
-    bodyFont: "'Cormorant Garamond', serif",
-    accentColor: '#8c6239', // Dark wood
-    textColor: '#2b261f',
-    backgroundColor: '#f6f2eb', // Warm parchment
-    borderColor: '#d9cdbc',
-    dividerStyle: 'dots',
-    description: 'Vintaged parchment-like aesthetic, script accents, and warm earthy tones. Ideal for pubs, pizzerias, and bakeries.',
-    styles: {
-      '--menu-header-font': "'Montserrat', sans-serif",
-      '--menu-subheader-font': "'Alex Brush', cursive",
-      '--menu-body-font': "'Cormorant Garamond', serif",
-      '--menu-accent': '#8c6239',
-      '--menu-text': '#2b261f',
-      '--menu-bg': '#f7f3eb',
-      '--menu-border': '#d3c5b3',
-      '--menu-category-transform': 'capitalize',
-      '--menu-category-weight': '600',
-      '--menu-item-name-weight': '700',
-      '--menu-divider-height': '1px'
+      '--menu-divider-height': '2px',
+      '--menu-align': 'left'
     }
   },
   {
@@ -100,97 +127,114 @@ export const PRESET_THEMES = [
       '--menu-category-transform': 'uppercase',
       '--menu-category-weight': '700',
       '--menu-item-name-weight': '600',
-      '--menu-divider-height': '1px'
+      '--menu-divider-height': '1px',
+      '--menu-align': 'left'
     }
   }
 ];
 
 export const INITIAL_MENU_DATA = {
-  restaurantName: "L'Aura Bistro",
-  subtitle: "Fresh • Organic • Seasonal",
-  footer: "Please inform your server of any allergies. An optional 10% service charge will be added to your bill.",
+  restaurantName: "Family Kitchen",
+  subtitle: "Nápojový Lístek • Drinks Menu",
+  footer: "Ceny jsou uvedeny v CZK. / Prices are in CZK.",
   categories: [
     {
       id: 'cat-1',
-      name: 'Starters',
-      description: 'Light bites to begin your culinary journey',
+      name: 'Nealko / Soft Drinks',
+      description: '',
       items: [
         {
           id: 'item-1-1',
-          name: 'Truffle Burrata',
-          description: 'Creamy burrata cheese, heirloom cherry tomatoes, wild arugula, truffle glaze, grilled sourdough.',
-          price: '14.50',
-          badge: 'Vegetarian',
+          name: 'Coca cola | Cola zero | Fanta | Sprite 330 ml (Plech)',
+          description: 'Coca cola | Cola zero | Fanta | Sprite 330 ml (Can)',
+          price: '55',
+          badge: '',
           isAvailable: true
         },
         {
           id: 'item-1-2',
-          name: 'Crispy Calamari',
-          description: 'Flash-fried calamari rings, spiced sea salt, smoked garlic aioli, fresh lemon wedges.',
-          price: '16.00',
-          badge: 'Popular',
+          name: 'Karafa Perlivá | Neperlivá 0,7l',
+          description: 'Carafe Sparkling | Still 0.7l',
+          price: '65',
+          badge: '',
           isAvailable: true
         },
         {
           id: 'item-1-3',
-          name: 'Roasted Tomato Soup',
-          description: 'Slow-roasted vine tomatoes, fresh basil, extra virgin olive oil, herb croutons.',
-          price: '9.00',
-          badge: 'Vegan',
+          name: 'Jablečný džus | Jahodový džus',
+          description: 'Apple Juice | Strawberry Juice',
+          price: '65',
+          badge: '',
+          isAvailable: true
+        },
+        {
+          id: 'item-1-4',
+          name: 'Fever Tree Tonic / Ginger Beer',
+          description: 'Premium tonics and ginger beer selection',
+          price: '85',
+          badge: '',
           isAvailable: true
         }
       ]
     },
     {
       id: 'cat-2',
-      name: 'Main Courses',
-      description: 'Hearty mains crafted with local ingredients',
+      name: 'Limonády / Lemonades',
+      description: '',
       items: [
         {
           id: 'item-2-1',
-          name: 'Pan-Seared Seabass',
-          description: 'Wild caught seabass, saffron risotto, baby asparagus, citrus butter emulsion.',
-          price: '29.00',
-          badge: '',
+          name: 'Mango Passion',
+          description: 'Mango, Passion Fruit, Soda',
+          price: '105',
+          badge: 'House',
           isAvailable: true
         },
         {
           id: 'item-2-2',
-          name: 'Dry Aged Ribeye (300g)',
-          description: '28-day dry aged grass-fed beef, rosemary roasted fingerling potatoes, charred broccolini, red wine jus.',
-          price: '38.00',
-          badge: 'Chef Special',
+          name: 'Berry Yuzu',
+          description: 'Yuzu, Raspberry Fruit, Soda',
+          price: '105',
+          badge: 'Popular',
           isAvailable: true
         },
         {
           id: 'item-2-3',
-          name: 'Wild Mushroom Gnocchi',
-          description: 'Handmade potato gnocchi, chanterelle mushrooms, baby spinach, parmesan cream sauce.',
-          price: '22.50',
-          badge: 'Vegetarian',
+          name: 'Candy Rosé',
+          description: 'Rose Syrup, Passion Fruit, Lime, Soda',
+          price: '110',
+          badge: '',
           isAvailable: true
         }
       ]
     },
     {
       id: 'cat-3',
-      name: 'Desserts & Drinks',
-      description: 'A sweet finish or refreshing companion',
+      name: 'Koktejly / Cocktails',
+      description: '',
       items: [
         {
           id: 'item-3-1',
-          name: 'Madagascar Vanilla Crème Brûlée',
-          description: 'Classic caramelized sugar crust, mixed wild berries.',
-          price: '9.50',
-          badge: '',
+          name: 'Espresso Martini',
+          description: 'Absolut Vodka, Espresso, Kahlua',
+          price: '185',
+          badge: 'Classic',
           isAvailable: true
         },
         {
           id: 'item-3-2',
-          name: 'Signature Espresso Martini',
-          description: 'Single-origin espresso, premium vodka, coffee liqueur, home-made vanilla syrup.',
-          price: '12.00',
-          badge: 'Classic',
+          name: 'Aperol Spritz',
+          description: 'Aperol, Prosecco, Soda',
+          price: '145',
+          badge: '',
+          isAvailable: true
+        },
+        {
+          id: 'item-3-3',
+          name: 'Moscow Mule',
+          description: 'Absolut Vodka, Ginger Beer, Lime Juice',
+          price: '160',
+          badge: '',
           isAvailable: true
         }
       ]
