@@ -107,6 +107,13 @@ export default function App() {
   const [confirmPasscode, setConfirmPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState('');
 
+  // Custom Presets
+  const [customPresets, setCustomPresets] = useState(() => {
+    const saved = localStorage.getItem('menu_designer_custom_presets');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [presetSaveName, setPresetSaveName] = useState('');
+
   const previewRef = useRef(null);
   const pageRef = useRef(null);
 
@@ -118,6 +125,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('menu_designer_settings', JSON.stringify(settings));
   }, [settings]);
+
+  useEffect(() => {
+    localStorage.setItem('menu_designer_custom_presets', JSON.stringify(customPresets));
+  }, [customPresets]);
 
   // --- AUTOMATIC OVERFLOW DETECTOR ---
   useEffect(() => {
@@ -193,6 +204,59 @@ export default function App() {
         passcodeHash: ''
       }));
       showToast('Passcode protection disabled.');
+    }
+  };
+
+  // --- CUSTOM PRESETS MANAGEMENT ---
+  const saveCustomPreset = (e) => {
+    e.preventDefault();
+    if (!presetSaveName.trim()) return;
+
+    const newPreset = {
+      id: `custom-preset-${Date.now()}`,
+      name: presetSaveName.trim(),
+      description: `Saved style (${new Date().toLocaleDateString()})`,
+      styles: {
+        theme: settings.theme,
+        pageSize: settings.pageSize,
+        columns: settings.columns,
+        pagePadding: settings.pagePadding,
+        categoryGap: settings.categoryGap,
+        itemGap: settings.itemGap,
+        titleSize: settings.titleSize,
+        subtitleSize: settings.subtitleSize,
+        catSize: settings.catSize,
+        itemSize: settings.itemSize,
+        descSize: settings.descSize,
+        showDots: settings.showDots,
+        borderStyle: settings.borderStyle,
+        borderWidth: settings.borderWidth,
+        textAlign: settings.textAlign,
+        customBg: settings.customBg,
+        customText: settings.customText,
+        customAccent: settings.customAccent,
+        customBorder: settings.customBorder
+      }
+    };
+
+    setCustomPresets(prev => [...prev, newPreset]);
+    setPresetSaveName('');
+    showToast(`Preset "${newPreset.name}" saved!`);
+  };
+
+  const applyCustomPreset = (preset) => {
+    setSettings(prev => ({
+      ...prev,
+      ...preset.styles
+    }));
+    showToast(`Applied custom preset "${preset.name}"`);
+  };
+
+  const deleteCustomPreset = (presetId, e) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this saved preset?')) {
+      setCustomPresets(prev => prev.filter(p => p.id !== presetId));
+      showToast('Preset deleted');
     }
   };
 
@@ -1148,6 +1212,60 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+
+                {/* SAVE CURRENT STYLE AS PRESET */}
+                <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                  <div className="panel-title">
+                    <Plus size={16} /> Save Current Styles
+                  </div>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '10px', lineHeight: 1.4 }}>
+                    Save all current layout parameters (colors, font sizes, margins, alignment) to a custom preset.
+                  </p>
+                  <form onSubmit={saveCustomPreset} style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="Name your custom preset..." 
+                      value={presetSaveName}
+                      onChange={(e) => setPresetSaveName(e.target.value)}
+                      style={{ flex: 1 }}
+                    />
+                    <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '0 16px' }}>
+                      Save Preset
+                    </button>
+                  </form>
+                </div>
+
+                {/* LIST SAVED CUSTOM PRESETS */}
+                {customPresets.length > 0 && (
+                  <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                    <div className="panel-title">
+                      <Sliders size={16} /> Your Custom Presets
+                    </div>
+                    <div className="preset-grid">
+                      {customPresets.map(preset => (
+                        <div 
+                          key={preset.id}
+                          className="preset-card"
+                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                          onClick={() => applyCustomPreset(preset)}
+                        >
+                          <div>
+                            <span className="preset-name">{preset.name}</span>
+                            <div className="preset-desc" style={{ fontSize: '0.7rem' }}>{preset.description}</div>
+                          </div>
+                          <button 
+                            className="icon-action-btn btn-delete-item"
+                            onClick={(e) => deleteCustomPreset(preset.id, e)}
+                            title="Delete Saved Preset"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
