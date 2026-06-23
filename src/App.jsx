@@ -23,7 +23,7 @@ import {
   Unlock,
   Key
 } from 'lucide-react';
-import { PAGE_SIZES, PRESET_THEMES, INITIAL_MENU_DATA } from './templates';
+import { PAGE_SIZES, PRESET_THEMES, INITIAL_MENU_DATA, INITIAL_DRINKS_MENU_DATA, INITIAL_FOOD_MENU_DATA } from './templates';
 
 // --- Cryptographic Hash Helper (Web Crypto SHA-256 with shift-hash fallback for HTTP) ---
 const hashPasscode = async (text) => {
@@ -751,6 +751,7 @@ export default function App() {
                         </div>
                         <div className="card-actions">
                           <button 
+                            type="button"
                             className="icon-action-btn btn-move-up" 
                             disabled={catIdx === 0}
                             onClick={(e) => moveCategory(catIdx, 'up', e)}
@@ -759,6 +760,7 @@ export default function App() {
                             <ChevronUp size={14} />
                           </button>
                           <button 
+                            type="button"
                             className="icon-action-btn btn-move-down" 
                             disabled={catIdx === menuData.categories.length - 1}
                             onClick={(e) => moveCategory(catIdx, 'down', e)}
@@ -767,6 +769,7 @@ export default function App() {
                             <ChevronDown size={14} />
                           </button>
                           <button 
+                            type="button"
                             className="icon-action-btn btn-delete-item" 
                             onClick={(e) => deleteCategory(cat.id, e)}
                             title="Delete Category"
@@ -846,6 +849,7 @@ export default function App() {
                                   
                                   <div style={{ display: 'flex', gap: '2px', marginLeft: '12px' }}>
                                     <button 
+                                      type="button"
                                       className="icon-action-btn" 
                                       disabled={itemIdx === 0}
                                       onClick={() => moveItem(cat.id, itemIdx, 'up')}
@@ -854,6 +858,7 @@ export default function App() {
                                       <ChevronUp size={12} />
                                     </button>
                                     <button 
+                                      type="button"
                                       className="icon-action-btn" 
                                       disabled={itemIdx === cat.items.length - 1}
                                       onClick={() => moveItem(cat.id, itemIdx, 'down')}
@@ -862,6 +867,7 @@ export default function App() {
                                       <ChevronDown size={12} />
                                     </button>
                                     <button 
+                                      type="button"
                                       className="icon-action-btn btn-delete-item" 
                                       onClick={() => deleteItem(cat.id, item.id)}
                                       title="Delete Item"
@@ -1305,6 +1311,46 @@ export default function App() {
                     <label htmlFor="menu-import-file" className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'inline-flex' }}>
                       Choose backup file
                     </label>
+                  </div>
+                </div>
+
+                {/* PRE-MADE MENU TEMPLATES */}
+                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', marginBottom: '20px' }}>
+                  <div className="panel-title">
+                    <BookOpen size={16} /> Pre-made Menu Datasets
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '12px', lineHeight: 1.4 }}>
+                    Quickly load the full pre-made food menu or drinks menu dataset parsed from your Canva files.
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary btn-sm" 
+                      style={{ flex: 1 }}
+                      onClick={() => {
+                        if (window.confirm('Load full pre-made Food Menu? This will replace your current editor items.')) {
+                          setMenuData(INITIAL_FOOD_MENU_DATA);
+                          setSettings(prev => ({ ...prev, textAlign: 'center', theme: 'centered-zen' }));
+                          showToast('Loaded Food Menu template!');
+                        }
+                      }}
+                    >
+                      Load Food Menu
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary btn-sm" 
+                      style={{ flex: 1 }}
+                      onClick={() => {
+                        if (window.confirm('Load full pre-made Drinks Menu? This will replace your current editor items.')) {
+                          setMenuData(INITIAL_DRINKS_MENU_DATA);
+                          setSettings(prev => ({ ...prev, textAlign: 'left', theme: 'modern-drinks' }));
+                          showToast('Loaded Drinks Menu template!');
+                        }
+                      }}
+                    >
+                      Load Drinks Menu
+                    </button>
                   </div>
                 </div>
 
