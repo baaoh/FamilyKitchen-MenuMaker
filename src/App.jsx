@@ -59,7 +59,7 @@ export default function App() {
     const saved = localStorage.getItem('menu_designer_settings');
     return saved ? JSON.parse(saved) : {
       pageSize: 'a4',
-      theme: 'elegant',
+      theme: 'centered-zen',
       columns: 1,
       pagePadding: 35,
       categoryGap: 24,
@@ -69,14 +69,14 @@ export default function App() {
       catSize: 1.25,
       itemSize: 0.95,
       descSize: 0.8,
-      showDots: true,
-      borderStyle: 'double',
+      showDots: false,
+      borderStyle: 'none',
       borderWidth: 1,
       customBg: '',
       customText: '',
       customAccent: '',
       customBorder: '',
-      textAlign: 'left', // 'left' | 'center'
+      textAlign: 'center', // 'left' | 'center'
       passcodeHash: '' // Empty string if unlocked
     };
   });
@@ -382,7 +382,7 @@ export default function App() {
       setMenuData(INITIAL_MENU_DATA);
       setSettings(prev => ({
         pageSize: 'a4',
-        theme: 'elegant',
+        theme: 'centered-zen',
         columns: 1,
         pagePadding: 35,
         categoryGap: 24,
@@ -392,14 +392,14 @@ export default function App() {
         catSize: 1.25,
         itemSize: 0.95,
         descSize: 0.8,
-        showDots: true,
-        borderStyle: 'double',
+        showDots: false,
+        borderStyle: 'none',
         borderWidth: 1,
         customBg: '',
         customText: '',
         customAccent: '',
         customBorder: '',
-        textAlign: 'left',
+        textAlign: 'center',
         passcodeHash: prev.passcodeHash // Keep the password lock active
       }));
       showToast('Reset complete');

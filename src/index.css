@@ -20,7 +20,7 @@
   --radius-md: 10px;
   --radius-lg: 16px;
   
-  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-ui: 'Open Sans', system-ui, -apple-system, sans-serif;
   
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
