@@ -117,6 +117,7 @@ export const INITIAL_DRINKS_MENU_DATA = {
       id: 'cat-d1',
       name: 'Nealko / Soft Drinks',
       description: '',
+      pageIndex: 0,
       items: [
         { id: 'item-d1-1', name: 'Coca cola | Cola zero | Fanta | Sprite 330 ml (Plech)', description: 'Coca cola | Cola zero | Fanta | Sprite 330 ml (Can)', price: '55', badge: '', isAvailable: true },
         { id: 'item-d1-2', name: 'Karafa Perlivá | Neperlivá 0,7l', description: 'Carafe Sparkling | Still 0.7l', price: '65', badge: '', isAvailable: true },
@@ -130,6 +131,7 @@ export const INITIAL_DRINKS_MENU_DATA = {
       id: 'cat-d2',
       name: 'Limonády / Lemonade',
       description: '',
+      pageIndex: 0,
       items: [
         { id: 'item-d2-1', name: 'Mango Passion', description: 'Mango, Passion Fruit, Soda', price: '105', badge: '', isAvailable: true },
         { id: 'item-d2-2', name: 'Berry Yuzu', description: 'Yuzu, Raspberry Fruit, Soda', price: '105', badge: '', isAvailable: true },
@@ -143,6 +145,7 @@ export const INITIAL_DRINKS_MENU_DATA = {
       id: 'cat-d3',
       name: 'Koktejly / Cocktails',
       description: '',
+      pageIndex: 0,
       items: [
         { id: 'item-d3-1', name: 'Espresso Martini', description: 'Absolut Vodka, Espresso, Kahlua', price: '185', badge: '', isAvailable: true },
         { id: 'item-d3-2', name: 'Aperol Spritz', description: 'Aperol, Prosecco, Soda', price: '145', badge: '', isAvailable: true },
@@ -161,6 +164,7 @@ export const INITIAL_DRINKS_MENU_DATA = {
       id: 'cat-d4',
       name: 'Family Signature / Craft Selection',
       description: '',
+      pageIndex: 0,
       items: [
         { id: 'item-d4-1', name: 'Sakura Bloom Gin Tonic', description: 'Roku Sakura Gin, Tonic', price: '220', badge: '', isAvailable: true },
         { id: 'item-d4-2', name: 'Kimono club', description: 'Roku Gin, Raspberry, Lime, Egg White', price: '220', badge: '', isAvailable: true },
@@ -175,6 +179,7 @@ export const INITIAL_DRINKS_MENU_DATA = {
       id: 'cat-d5',
       name: 'Prosecco / Prosecco',
       description: '',
+      pageIndex: 1,
       items: [
         { id: 'item-d5-1', name: 'Mionetto prosecco Extra Dry 0,1l | 0,75l', description: 'Prosecco glass or bottle', price: '95 | 475', badge: '', isAvailable: true },
         { id: 'item-d5-2', name: 'Corner Valdobbiadene Prosecco Superiore DOCG 0,75l', description: 'Premium Prosecco bottle', price: '690', badge: '', isAvailable: true }
@@ -184,6 +189,7 @@ export const INITIAL_DRINKS_MENU_DATA = {
       id: 'cat-d6',
       name: 'Víno / Wine',
       description: 'Červené a bílé víno / Red and white wine',
+      pageIndex: 1,
       items: [
         { id: 'item-d6-1', name: 'Ramón Bilbao Edición Limitada 0,15l | 0,75l', description: 'Červené víno / Red Wine', price: '165 | 790', badge: '', isAvailable: true },
         { id: 'item-d6-2', name: 'Terre di Faiano Primitivo Organic 0,15l | 0,75l', description: 'Červené víno / Red Wine', price: '145 | 690', badge: '', isAvailable: true },
@@ -196,6 +202,7 @@ export const INITIAL_DRINKS_MENU_DATA = {
       id: 'cat-d7',
       name: 'Pivo / Beer',
       description: '',
+      pageIndex: 1,
       items: [
         { id: 'item-d7-1', name: 'Pilsner Urquell 0,33l', description: 'Draught beer', price: '55', badge: '', isAvailable: true },
         { id: 'item-d7-2', name: 'Pilsner Urquell 0,5l', description: 'Draught beer', price: '69', badge: '', isAvailable: true },
@@ -206,6 +213,7 @@ export const INITIAL_DRINKS_MENU_DATA = {
       id: 'cat-d8',
       name: 'Káva / Coffee',
       description: '',
+      pageIndex: 1,
       items: [
         { id: 'item-d8-1', name: 'Espresso', description: 'Classic Espresso', price: '55', badge: '', isAvailable: true },
         { id: 'item-d8-2', name: 'Cappuccino', description: 'Espresso with steamed milk foam', price: '75', badge: '', isAvailable: true },
@@ -222,6 +230,7 @@ export const INITIAL_DRINKS_MENU_DATA = {
       id: 'cat-d9',
       name: 'SHOTS (0,04l)',
       description: '',
+      pageIndex: 1,
       items: [
         { id: 'item-d9-1', name: 'Grey Goose vodka', description: 'Grey Goose vodka', price: '155', badge: '', isAvailable: true },
         { id: 'item-d9-2', name: 'Absolut vodka', description: 'Absolut vodka', price: '95', badge: '', isAvailable: true },
@@ -255,6 +264,7 @@ export const INITIAL_FOOD_MENU_DATA = {
       id: 'cat-f1',
       name: 'Něco pro začátek / Starters',
       description: '',
+      pageIndex: 0,
       items: [
         { id: 'item-f1-1', name: 'Svěží mango salát s trhaným kuřetem (4,5)', description: 'Fresh Mango Salad with Shredded Chicken', price: '95', badge: '', isAvailable: true },
         { id: 'item-f1-2', name: 'Křupavé vepřové závitky s tradiční náplní (3 ks) (1,3)', description: 'Crispy Pork Spring Rolls with Traditional Filling (3 pcs)', price: '133', badge: '', isAvailable: true },
@@ -266,6 +276,7 @@ export const INITIAL_FOOD_MENU_DATA = {
       id: 'cat-f2',
       name: 'Domácí výběr / Homemade Selection',
       description: '',
+      pageIndex: 0,
       items: [
         { id: 'item-f2-1', name: 'Bun Bo Nam Bo s bylinkami a křupavou cibulkou (5,6)', description: 'Bun Bo Nam Bo with Fresh Herbs and Crispy Shallots', price: '234', badge: '', isAvailable: true },
         { id: 'item-f2-2', name: 'Pravý hovězí/kuřecí vývar Phở z Hanoje (4,6)', description: 'Authentic Hanoi Beef/Chicken Phở Noodle Soup', price: '230/220', badge: '', isAvailable: true },
@@ -279,6 +290,7 @@ export const INITIAL_FOOD_MENU_DATA = {
       id: 'cat-f3',
       name: 'Degustační sety / Tasting Sets',
       description: '(Od / From 11h - 17h)',
+      pageIndex: 0,
       items: [
         { id: 'item-f3-1', name: 'Vůně Hanoje / Scents of Hanoi', description: 'Karamelizovaný sladký bůček, Restované kuřecí se žampiony, Pekingské zelí na česneku, Slané arašídy, Rýže, Polévka dne, Dezert / Caramelized sweet pork belly, Stir-Fried Napa Cabbage, Jasmine Rice, Soup, Dessert', price: '283', badge: 'Set Menu', isAvailable: true },
         { id: 'item-f3-2', name: 'Tradiční zážitek / A Traditional Experience', description: 'Mleté vepřové v betelovém listu, Restovaná zeleninová směs s hovězím, Slané arašídy, Rýže, Polévka dne, Dezert / Grilled Pork in Betel Leaves, Stir-Fried Beef with Mixed Vegetables, Jasmine Rice, Soup, Dessert', price: '283', badge: 'Set Menu', isAvailable: true },
@@ -289,6 +301,7 @@ export const INITIAL_FOOD_MENU_DATA = {
       id: 'cat-f4',
       name: 'Otsumami a saláty / Small Plates & Salads',
       description: '',
+      pageIndex: 1,
       items: [
         { id: 'item-f4-1', name: 'Křupavé knedlíčky Gyoza (3ks) (1,6)', description: 'Crispy Gyoza Dumplings (3pcs)', price: '113', badge: '', isAvailable: true },
         { id: 'item-f4-2', name: 'Zeleninový salát s mořskými řasami a Tobiko (2,11)', description: 'Vegetable Salad with Seaweed and Tobiko', price: '163', badge: '', isAvailable: true },
@@ -300,6 +313,7 @@ export const INITIAL_FOOD_MENU_DATA = {
       id: 'cat-f5',
       name: 'Japonské speciality / Japanese specialities',
       description: '',
+      pageIndex: 1,
       items: [
         { id: 'item-f5-1', name: 'Japonské Donburi s Tonkatsu, omeletou a silnou omáčkou (1, 3, 4, 6)', description: 'Japanese Donburi with Tonkatsu, Omelette and Rich Sauce', price: '283', badge: '', isAvailable: true },
         { id: 'item-f5-2', name: 'Tygří krevety Tempura v těstíčku s Tentsuyu omáčkou (3 ks) (1, 4, 6)', description: 'Tiger Shrimp Tempura in light batter with Tentsuyu sauce (3pcs)', price: '198', badge: '', isAvailable: true }
@@ -309,6 +323,7 @@ export const INITIAL_FOOD_MENU_DATA = {
       id: 'cat-f6',
       name: 'Degustační sety Teishoku / Teishoku Tasting Sets',
       description: '',
+      pageIndex: 1,
       items: [
         { id: 'item-f6-1', name: 'Svěží a lehký zážitek / Light and Refreshing', description: 'Salát z mořských řas s vejcem a krevetami, miso polévka, maki avokádo (6 ks), nigiri losos (2 ks), dezert / Seaweed Salad, Miso Soup, Avocado Maki, Salmon Nigiri, Dessert', price: '220', badge: 'Teishoku', isAvailable: true },
         { id: 'item-f6-2', name: 'Tonkatsu & Tempura', description: 'Sezónní zelenina se sezamovým dresinkem, tempura krevety (3ks), Tonkatsu, jasmínová rýže, miso polévka, dezert / Seasonal Vegetables, Tempura Shrimp, Pork Tonkatsu, Jasmine Rice, Miso Soup, Dessert', price: '220', badge: 'Teishoku', isAvailable: true },
@@ -320,6 +335,7 @@ export const INITIAL_FOOD_MENU_DATA = {
       id: 'cat-f7',
       name: 'Sushi Menu',
       description: 'Nigiri, Hoso Maki, Uramaki',
+      pageIndex: 1,
       items: [
         { id: 'item-f7-1', name: 'Sake Nigiri / Ebi Nigiri', description: 'Salmon or shrimp Nigiri sushi (2pcs)', price: '220', badge: '', isAvailable: true },
         { id: 'item-f7-2', name: 'Sake / Avocado / Ebi Ten / Kappa Hosomaki', description: 'Hosomaki selection (6pcs)', price: '220', badge: '', isAvailable: true },
@@ -333,6 +349,7 @@ export const INITIAL_FOOD_MENU_DATA = {
       id: 'cat-f8',
       name: 'Výběr vegetariánkých pokrmů / Veggie Selection',
       description: '',
+      pageIndex: 2,
       items: [
         { id: 'item-f8-1', name: 'Smažené široké rýžové nudle Phở se sezónní zeleninou', description: 'Wok-Tossed Phở Noodles with Seasonal Vegetables', price: '220', badge: '', isAvailable: true },
         { id: 'item-f8-2', name: 'Vegetariánská smažená rýže se zeleninou', description: 'Vegetarian Vegetable Fried Rice', price: '220', badge: '', isAvailable: true },
@@ -344,6 +361,7 @@ export const INITIAL_FOOD_MENU_DATA = {
       id: 'cat-f9',
       name: 'Přílohy / Side Dishes',
       description: '',
+      pageIndex: 2,
       items: [
         { id: 'item-f9-1', name: 'Jasmínová rýže', description: 'Jasmine Rice', price: '50', badge: '', isAvailable: true },
         { id: 'item-f9-2', name: 'Smažené tofu', description: 'Golden Fried Tofu (portion)', price: '80', badge: '', isAvailable: true },
@@ -354,6 +372,7 @@ export const INITIAL_FOOD_MENU_DATA = {
       id: 'cat-f10',
       name: 'Menu pro nejmenší / For Our Little Guests',
       description: '',
+      pageIndex: 2,
       items: [
         { id: 'item-f10-1', name: 'Dětská polévka Phở', description: 'Kids\' Phở Noodle Soup (smaller portion)', price: '120', badge: '', isAvailable: true },
         { id: 'item-f10-2', name: 'Kuřecí nugetky', description: 'Chicken Nuggets with small side', price: '140', badge: '', isAvailable: true },
@@ -364,6 +383,7 @@ export const INITIAL_FOOD_MENU_DATA = {
       id: 'cat-f11',
       name: 'Dezerty / Desserts',
       description: '',
+      pageIndex: 2,
       items: [
         { id: 'item-f11-1', name: 'Mangový cheesecake', description: 'Creamy Cheesecake with Fresh Mango', price: '110', badge: '', isAvailable: true },
         { id: 'item-f11-2', name: 'Zmrzlina', description: 'Ice Cream Selection (3 scoops)', price: '90', badge: '', isAvailable: true },
