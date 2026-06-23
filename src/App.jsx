@@ -399,7 +399,8 @@ export default function App() {
   const exportJSON = () => {
     const exportObj = {
       menuData,
-      settings
+      settings,
+      customPresets
     };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj, null, 2));
     const downloadAnchor = document.createElement('a');
@@ -432,6 +433,9 @@ export default function App() {
             ...parsed.settings,
             passcodeHash: prev.passcodeHash
           }));
+        }
+        if (parsed.customPresets) {
+          setCustomPresets(parsed.customPresets);
         }
         showToast('Menu imported successfully!');
       } catch (err) {
