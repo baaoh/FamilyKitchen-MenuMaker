@@ -1614,6 +1614,307 @@ export default function App() {
     );
   }
 
+  // --- PRINT RENDER HELPER ---
+  const renderPrintPage = (pIdx) => {
+    const pageCategories = menuData.categories.filter(c => 
+      (c.pageIndex !== undefined ? c.pageIndex : 0) === pIdx
+    );
+
+    return (
+      <div 
+        className="menu-page-wrapper" 
+        style={{
+          width: currentSizeObj.id === 'a5' ? '148.5mm' : currentSizeObj.width,
+          height: currentSizeObj.height,
+          position: 'relative',
+          background: '#ffffff',
+          boxShadow: 'none',
+          overflow: 'hidden',
+          flexShrink: 0
+        }}
+      >
+        <div
+          className="print-scale-wrapper"
+          style={{
+            width: currentSizeObj.id === 'a5' ? '148.5mm' : currentSizeObj.width,
+            height: currentSizeObj.height,
+            position: 'relative',
+            flexShrink: 0,
+            boxSizing: 'border-box',
+            ...getThemeStyles()
+          }}
+        >
+          {settings.borderStyle !== 'none' && <div className="menu-border-decorator"></div>}
+          {settings.borderStyle === 'double' && <div className="menu-border-double"></div>}
+          
+          <div className="menu-page-content">
+            {pIdx === 0 ? (
+              <header className="menu-header-block">
+                <h2 className="menu-title" style={resolveStyle('menu-title', menuData.styles?.title)}>{menuData.restaurantName}</h2>
+                {menuData.subtitle && <p className="menu-subtitle" style={resolveStyle('menu-subtitle', menuData.styles?.subtitle)}>{menuData.subtitle}</p>}
+                <div className="menu-header-divider"></div>
+              </header>
+            ) : (
+              <div style={{ height: '15px' }}></div>
+            )}
+
+            <div className="menu-body-block">
+              <div 
+                className="menu-columns-container" 
+                style={{ 
+                  gridTemplateColumns: `repeat(${settings.columns}, 1fr)`,
+                  height: '100%'
+                }}
+              >
+                {pageCategories.map((category) => {
+                  const categoryAlign = category.textAlign && category.textAlign !== 'default' ? category.textAlign : (settings.textAlign || 'left');
+                  return (
+                    <section key={category.id} className="menu-category-section" style={{
+                      textAlign: categoryAlign === 'center' ? 'center' : 'left'
+                    }}>
+                      <div className="menu-category-header">
+                        <h3 
+                          className="menu-category-name"
+                          style={resolveStyle('menu-category-name', category.styles?.name, category.id, 'name')}
+                        >
+                          {category.name}
+                        </h3>
+                        {category.enName && (
+                          <h4 
+                            className="menu-category-name-en"
+                            style={resolveStyle('menu-category-name-en', category.styles?.nameEn, category.id, 'nameEn')}
+                          >
+                            {category.enName}
+                          </h4>
+                        )}
+                        {category.description && (
+                          <p 
+                            className="menu-category-desc"
+                            style={resolveStyle('menu-category-desc', category.styles?.description, category.id, 'description')}
+                          >
+                            {category.description}
+                          </p>
+                        )}
+                        {category.enDescription && (
+                          <p 
+                            className="menu-category-desc-en"
+                            style={resolveStyle('menu-category-desc-en', category.styles?.descriptionEn, category.id, 'descriptionEn')}
+                          >
+                            {category.enDescription}
+                          </p>
+                        )}
+                        <div className="category-divider">
+                          {activeThemeObj.dividerStyle === 'line' && <div className="divider-line-solid"></div>}
+                          {activeThemeObj.dividerStyle === 'dots' && <div className="divider-line-dots">...</div>}
+                          {activeThemeObj.dividerStyle === 'dashed' && <div className="divider-line-solid" style={{ borderBottom: '1px dashed' }}></div>}
+                          {activeThemeObj.dividerStyle === 'ornament' && (
+                            <div className="divider-line-ornament">
+                              <span style={{ fontSize: '0.65rem' }}>❖</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div 
+                        className="menu-items-grid"
+                        style={getItemsGridStyle(category.itemLayout)}
+                      >
+                        {category.items.map((item, itemIdx) => (
+                          categoryAlign === 'center' ? (
+                            <div 
+                              key={item.id} 
+                              className="menu-item-row" 
+                              style={{ 
+                                alignItems: 'center', 
+                                textAlign: 'center', 
+                                marginBottom: '4px',
+                                ...getItemStyle(category.itemLayout, itemIdx, category.items.length)
+                              }}
+                            >
+                              {item.showImage && item.image && (
+                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px', width: '100%' }}>
+                                  <img 
+                                    src={item.image} 
+                                    alt={item.name} 
+                                    style={{
+                                      maxWidth: '100%',
+                                      maxHeight: '100px',
+                                      height: 'auto',
+                                      width: `${item.imageScale || 100}%`,
+                                      borderRadius: '4px',
+                                      objectFit: 'cover'
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              <div className="item-name-group" style={{ justifyContent: 'center' }}>
+                                <span 
+                                  className="item-name"
+                                  style={resolveStyle('item-name', item.styles?.name, `${category.id}::${item.id}`, 'name')}
+                                >
+                                  {item.name}
+                                </span>
+                                {item.allergens && (
+                                  <span 
+                                    className="item-allergens"
+                                    style={{ marginLeft: '6px', ...resolveStyle('item-allergens', item.styles?.allergens, `${category.id}::${item.id}`, 'allergens') }}
+                                  >
+                                    ({item.allergens})
+                                  </span>
+                                )}
+                                {item.badge && (
+                                  <span 
+                                    className="item-badge"
+                                    style={{ marginLeft: '6px', ...resolveStyle('item-badge', item.styles?.badge, `${category.id}::${item.id}`, 'badge') }}
+                                  >
+                                    {item.badge}
+                                  </span>
+                                )}
+                              </div>
+
+                              {item.enName && (
+                                <div 
+                                  className="item-name-en"
+                                  style={resolveStyle('item-name-en', item.styles?.nameEn, `${category.id}::${item.id}`, 'nameEn')}
+                                >
+                                  {item.enName}
+                                </div>
+                              )}
+
+                              {item.description && (
+                                <p 
+                                  className="item-description"
+                                  style={{ marginTop: '2px', marginBottom: '4px', ...resolveStyle('item-description', item.styles?.description, `${category.id}::${item.id}`, 'description') }}
+                                >
+                                  {item.description}
+                                </p>
+                              )}
+
+                              {item.enDescription && (
+                                <p 
+                                  className="item-description-en"
+                                  style={resolveStyle('item-description-en', item.styles?.descriptionEn, `${category.id}::${item.id}`, 'descriptionEn')}
+                                >
+                                  {item.enDescription}
+                                </p>
+                              )}
+
+                              <span 
+                                className="item-price"
+                                style={{ color: 'var(--menu-accent)', fontWeight: 700, ...resolveStyle('item-price', item.styles?.price, `${category.id}::${item.id}`, 'price') }}
+                              >
+                                {item.price}
+                              </span>
+                            </div>
+                          ) : (
+                            <div 
+                              key={item.id} 
+                              className="menu-item-row"
+                              style={getItemStyle(category.itemLayout, itemIdx, category.items.length)}
+                            >
+                              {item.showImage && item.image && (
+                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px', width: '100%' }}>
+                                  <img 
+                                    src={item.image} 
+                                    alt={item.name} 
+                                    style={{
+                                      maxWidth: '100%',
+                                      maxHeight: '100px',
+                                      height: 'auto',
+                                      width: `${item.imageScale || 100}%`,
+                                      borderRadius: '4px',
+                                      objectFit: 'cover'
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              <div className="item-main-line">
+                                <div className="item-name-group">
+                                  <span 
+                                    className="item-name"
+                                    style={resolveStyle('item-name', item.styles?.name, `${category.id}::${item.id}`, 'name')}
+                                  >
+                                    {item.name}
+                                  </span>
+                                  {item.allergens && (
+                                    <span 
+                                      className="item-allergens"
+                                      style={{ marginLeft: '6px', ...resolveStyle('item-allergens', item.styles?.allergens, `${category.id}::${item.id}`, 'allergens') }}
+                                    >
+                                      ({item.allergens})
+                                    </span>
+                                  )}
+                                  {item.badge && (
+                                    <span 
+                                      className="item-badge"
+                                      style={resolveStyle('item-badge', item.styles?.badge, `${category.id}::${item.id}`, 'badge')}
+                                    >
+                                      {item.badge}
+                                    </span>
+                                  )}
+                                </div>
+                                {settings.showDots && <div className="price-leader-dots"></div>}
+                                <span 
+                                  className="item-price"
+                                  style={resolveStyle('item-price', item.styles?.price, `${category.id}::${item.id}`, 'price')}
+                                >
+                                  {item.price}
+                                </span>
+                              </div>
+
+                              {item.enName && (
+                                <div 
+                                  className="item-name-en"
+                                  style={resolveStyle('item-name-en', item.styles?.nameEn, `${category.id}::${item.id}`, 'nameEn')}
+                                >
+                                  {item.enName}
+                                </div>
+                              )}
+
+                              {item.description && (
+                                <p 
+                                  className="item-description"
+                                  style={resolveStyle('item-description', item.styles?.description, `${category.id}::${item.id}`, 'description')}
+                                >
+                                  {item.description}
+                                </p>
+                              )}
+
+                              {item.enDescription && (
+                                <p 
+                                  className="item-description-en"
+                                  style={resolveStyle('item-description-en', item.styles?.descriptionEn, `${category.id}::${item.id}`, 'descriptionEn')}
+                                >
+                                  {item.enDescription}
+                                </p>
+                              )}
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            </div>
+
+            {pIdx === (settings.pageCount || 1) - 1 && menuData.footer && (
+              <footer className="menu-footer-block">
+                <div className="menu-footer-divider"></div>
+                <p 
+                  className="menu-footer-text"
+                  style={resolveStyle('menu-footer-text', menuData.styles?.footer, 'restaurant', 'footer')}
+                >
+                  {menuData.footer}
+                </p>
+              </footer>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ==========================================
   // CORE DASHBOARD EDITOR RENDER
   // ==========================================
@@ -3636,323 +3937,102 @@ export default function App() {
 
     {/* PRINT-ONLY VERSION RENDERED IN NATIVE BROWSER WINDOW */}
     <div className="print-only-layout" style={{ display: 'none' }}>
-      {Array.from({ length: settings.pageCount || 1 }).map((_, pageIdx) => {
-        const pageCategories = menuData.categories.filter(c => 
-          (c.pageIndex !== undefined ? c.pageIndex : 0) === pageIdx
-        );
+      {/* Inject dynamic @page style rule for printing */}
+      <style>
+        {`
+          @media print {
+            @page {
+              size: ${settings.pageSize === 'a5' ? 'A4 landscape' : 'A4 portrait'};
+              margin: 0;
+            }
+          }
+        `}
+      </style>
 
-        const currentWidth = parseFloat(currentSizeObj.width);
-        const currentHeight = parseFloat(currentSizeObj.height);
-        const isSmallerThanA4 = settings.pageSize !== 'a4';
+      {(() => {
+        const isGrouped = settings.pageSize === 'a5' || settings.pageSize === 'split-a4';
+        const totalPages = settings.pageCount || 1;
         
-        let scaleFactor = 1.0;
-        if (isSmallerThanA4) {
-          const scaleW = 210 / currentWidth;
-          const scaleH = 297 / currentHeight;
-          scaleFactor = Math.min(scaleW, scaleH);
-        }
+        if (isGrouped) {
+          const sheetCount = Math.ceil(totalPages / 2);
+          return Array.from({ length: sheetCount }).map((_, sheetIdx) => {
+            const page1Idx = sheetIdx * 2;
+            const page2Idx = sheetIdx * 2 + 1;
+            
+            const isA5 = settings.pageSize === 'a5';
+            const sheetWidth = isA5 ? '297mm' : '210mm';
+            const sheetHeight = isA5 ? '210mm' : '297mm';
+            const halfWidth = isA5 ? '148.5mm' : '105mm';
+            const halfHeight = isA5 ? '210mm' : '297mm';
 
-        return (
-          <div 
-            key={pageIdx}
-            className="menu-page-wrapper" 
-            style={{
-              width: isSmallerThanA4 ? '210mm' : currentSizeObj.width,
-              height: isSmallerThanA4 ? '297mm' : currentSizeObj.height,
-              position: 'relative',
-              margin: '0 auto',
-              background: '#ffffff',
-              display: isSmallerThanA4 ? 'flex' : 'block',
-              alignItems: isSmallerThanA4 ? 'center' : undefined,
-              justifyContent: isSmallerThanA4 ? 'center' : undefined,
-              boxShadow: 'none',
-              overflow: 'hidden'
-            }}
-          >
-            <div
-              className="print-scale-wrapper"
-              style={{
-                width: currentSizeObj.width,
-                height: currentSizeObj.height,
-                position: 'relative',
-                transform: isSmallerThanA4 ? `scale(${scaleFactor})` : 'none',
-                transformOrigin: 'center center',
-                flexShrink: 0,
-                boxSizing: 'border-box',
-                ...getThemeStyles()
-              }}
-            >
-              {settings.borderStyle !== 'none' && <div className="menu-border-decorator"></div>}
-              {settings.borderStyle === 'double' && <div className="menu-border-double"></div>}
-              
-              <div className="menu-page-content">
-                {pageIdx === 0 ? (
-                  <header className="menu-header-block">
-                    <h2 className="menu-title" style={resolveStyle('menu-title', menuData.styles?.title)}>{menuData.restaurantName}</h2>
-                    {menuData.subtitle && <p className="menu-subtitle" style={resolveStyle('menu-subtitle', menuData.styles?.subtitle)}>{menuData.subtitle}</p>}
-                    <div className="menu-header-divider"></div>
-                  </header>
+            return (
+              <div 
+                key={sheetIdx}
+                className="print-sheet-wrapper"
+                style={{
+                  width: sheetWidth,
+                  height: sheetHeight,
+                  display: 'flex',
+                  flexDirection: 'row',
+                  pageBreakAfter: 'always',
+                  breakAfter: 'page',
+                  pageBreakInside: 'avoid',
+                  breakInside: 'avoid',
+                  boxSizing: 'border-box',
+                  background: '#ffffff',
+                  overflow: 'hidden'
+                }}
+              >
+                {/* Left Page (Page 1 of the pair) */}
+                {renderPrintPage(page1Idx)}
+                
+                {/* Right Page (Page 2 of the pair, or blank spacer) */}
+                {page2Idx < totalPages ? (
+                  renderPrintPage(page2Idx)
                 ) : (
-                  <div style={{ height: '15px' }}></div>
-                )}
-
-                <div className="menu-body-block">
                   <div 
-                    className="menu-columns-container" 
-                    style={{ 
-                      gridTemplateColumns: `repeat(${settings.columns}, 1fr)`,
-                      height: '100%'
+                    className="menu-page-wrapper blank-print-page" 
+                    style={{
+                      width: halfWidth,
+                      height: halfHeight,
+                      background: '#ffffff',
+                      flexShrink: 0
                     }}
-                  >
-                    {pageCategories.map((category) => {
-                      const categoryAlign = category.textAlign && category.textAlign !== 'default' ? category.textAlign : (settings.textAlign || 'left');
-                      return (
-                        <section key={category.id} className="menu-category-section" style={{
-                          textAlign: categoryAlign === 'center' ? 'center' : 'left'
-                        }}>
-                          <div className="menu-category-header">
-                            <h3 
-                              className="menu-category-name"
-                              style={resolveStyle('menu-category-name', category.styles?.name, category.id, 'name')}
-                            >
-                              {category.name}
-                            </h3>
-                            {category.enName && (
-                              <h4 
-                                className="menu-category-name-en"
-                                style={resolveStyle('menu-category-name-en', category.styles?.nameEn, category.id, 'nameEn')}
-                              >
-                                {category.enName}
-                              </h4>
-                            )}
-                            {category.description && (
-                              <p 
-                                className="menu-category-desc"
-                                style={resolveStyle('menu-category-desc', category.styles?.description, category.id, 'description')}
-                              >
-                                {category.description}
-                              </p>
-                            )}
-                            {category.enDescription && (
-                              <p 
-                                className="menu-category-desc-en"
-                                style={resolveStyle('menu-category-desc-en', category.styles?.descriptionEn, category.id, 'descriptionEn')}
-                              >
-                                {category.enDescription}
-                              </p>
-                            )}
-                            <div className="category-divider">
-                              {activeThemeObj.dividerStyle === 'line' && <div className="divider-line-solid"></div>}
-                              {activeThemeObj.dividerStyle === 'dots' && <div className="divider-line-dots">...</div>}
-                              {activeThemeObj.dividerStyle === 'dashed' && <div className="divider-line-solid" style={{ borderBottom: '1px dashed' }}></div>}
-                              {activeThemeObj.dividerStyle === 'ornament' && (
-                                <div className="divider-line-ornament">
-                                  <span style={{ fontSize: '0.65rem' }}>❖</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div 
-                            className="menu-items-grid"
-                            style={getItemsGridStyle(category.itemLayout)}
-                          >
-                            {category.items.map((item, itemIdx) => (
-                              categoryAlign === 'center' ? (
-                                <div 
-                                  key={item.id} 
-                                  className="menu-item-row" 
-                                  style={{ 
-                                    alignItems: 'center', 
-                                    textAlign: 'center', 
-                                    marginBottom: '4px',
-                                    ...getItemStyle(category.itemLayout, itemIdx, category.items.length)
-                                  }}
-                                >
-                                  {item.showImage && item.image && (
-                                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px', width: '100%' }}>
-                                      <img 
-                                        src={item.image} 
-                                        alt={item.name} 
-                                        style={{
-                                          maxWidth: '100%',
-                                          maxHeight: '100px',
-                                          height: 'auto',
-                                          width: `${item.imageScale || 100}%`,
-                                          borderRadius: '4px',
-                                          objectFit: 'cover'
-                                        }}
-                                      />
-                                    </div>
-                                  )}
-                                  <div className="item-name-group" style={{ justifyContent: 'center' }}>
-                                    <span 
-                                      className="item-name"
-                                      style={resolveStyle('item-name', item.styles?.name, `${category.id}::${item.id}`, 'name')}
-                                    >
-                                      {item.name}
-                                    </span>
-                                    {item.allergens && (
-                                      <span 
-                                        className="item-allergens"
-                                        style={{ marginLeft: '6px', ...resolveStyle('item-allergens', item.styles?.allergens, `${category.id}::${item.id}`, 'allergens') }}
-                                      >
-                                        ({item.allergens})
-                                      </span>
-                                    )}
-                                    {item.badge && (
-                                      <span 
-                                        className="item-badge"
-                                        style={{ marginLeft: '6px', ...resolveStyle('item-badge', item.styles?.badge, `${category.id}::${item.id}`, 'badge') }}
-                                      >
-                                        {item.badge}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {item.enName && (
-                                    <div 
-                                      className="item-name-en"
-                                      style={resolveStyle('item-name-en', item.styles?.nameEn, `${category.id}::${item.id}`, 'nameEn')}
-                                    >
-                                      {item.enName}
-                                    </div>
-                                  )}
-
-                                  {item.description && (
-                                    <p 
-                                      className="item-description"
-                                      style={{ marginTop: '2px', marginBottom: '4px', ...resolveStyle('item-description', item.styles?.description, `${category.id}::${item.id}`, 'description') }}
-                                    >
-                                      {item.description}
-                                    </p>
-                                  )}
-
-                                  {item.enDescription && (
-                                    <p 
-                                      className="item-description-en"
-                                      style={resolveStyle('item-description-en', item.styles?.descriptionEn, `${category.id}::${item.id}`, 'descriptionEn')}
-                                    >
-                                      {item.enDescription}
-                                    </p>
-                                  )}
-
-                                  <span 
-                                    className="item-price"
-                                    style={{ color: 'var(--menu-accent)', fontWeight: 700, ...resolveStyle('item-price', item.styles?.price, `${category.id}::${item.id}`, 'price') }}
-                                  >
-                                    {item.price}
-                                  </span>
-                                </div>
-                              ) : (
-                                <div 
-                                  key={item.id} 
-                                  className="menu-item-row"
-                                  style={getItemStyle(category.itemLayout, itemIdx, category.items.length)}
-                                >
-                                  {item.showImage && item.image && (
-                                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px', width: '100%' }}>
-                                      <img 
-                                        src={item.image} 
-                                        alt={item.name} 
-                                        style={{
-                                          maxWidth: '100%',
-                                          maxHeight: '100px',
-                                          height: 'auto',
-                                          width: `${item.imageScale || 100}%`,
-                                          borderRadius: '4px',
-                                          objectFit: 'cover'
-                                        }}
-                                      />
-                                    </div>
-                                  )}
-                                  <div className="item-main-line">
-                                    <div className="item-name-group">
-                                      <span 
-                                        className="item-name"
-                                        style={resolveStyle('item-name', item.styles?.name, `${category.id}::${item.id}`, 'name')}
-                                      >
-                                        {item.name}
-                                      </span>
-                                      {item.allergens && (
-                                        <span 
-                                          className="item-allergens"
-                                          style={{ marginLeft: '6px', ...resolveStyle('item-allergens', item.styles?.allergens, `${category.id}::${item.id}`, 'allergens') }}
-                                        >
-                                          ({item.allergens})
-                                        </span>
-                                      )}
-                                      {item.badge && (
-                                        <span 
-                                          className="item-badge"
-                                          style={resolveStyle('item-badge', item.styles?.badge, `${category.id}::${item.id}`, 'badge')}
-                                        >
-                                          {item.badge}
-                                        </span>
-                                      )}
-                                    </div>
-                                    {settings.showDots && <div className="price-leader-dots"></div>}
-                                    <span 
-                                      className="item-price"
-                                      style={resolveStyle('item-price', item.styles?.price, `${category.id}::${item.id}`, 'price')}
-                                    >
-                                      {item.price}
-                                    </span>
-                                  </div>
-
-                                  {item.enName && (
-                                    <div 
-                                      className="item-name-en"
-                                      style={resolveStyle('item-name-en', item.styles?.nameEn, `${category.id}::${item.id}`, 'nameEn')}
-                                    >
-                                      {item.enName}
-                                    </div>
-                                  )}
-
-                                  {item.description && (
-                                    <p 
-                                      className="item-description"
-                                      style={resolveStyle('item-description', item.styles?.description, `${category.id}::${item.id}`, 'description')}
-                                    >
-                                      {item.description}
-                                    </p>
-                                  )}
-
-                                  {item.enDescription && (
-                                    <p 
-                                      className="item-description-en"
-                                      style={resolveStyle('item-description-en', item.styles?.descriptionEn, `${category.id}::${item.id}`, 'descriptionEn')}
-                                    >
-                                      {item.enDescription}
-                                    </p>
-                                  )}
-                                </div>
-                              )
-                            ))}
-                          </div>
-                        </section>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {pageIdx === (settings.pageCount || 1) - 1 && menuData.footer && (
-                  <footer className="menu-footer-block">
-                    <div className="menu-footer-divider"></div>
-                    <p 
-                      className="menu-footer-text"
-                      style={resolveStyle('menu-footer-text', menuData.styles?.footer, 'restaurant', 'footer')}
-                    >
-                      {menuData.footer}
-                    </p>
-                  </footer>
+                  />
                 )}
               </div>
-            </div>
-          </div>
-        );
-      })}
-      </div>
+            );
+          });
+        } else {
+          // Single page sheets (A4 or Square)
+          return Array.from({ length: totalPages }).map((_, pageIdx) => {
+            const isSquare = settings.pageSize === 'square';
+            return (
+              <div 
+                key={pageIdx}
+                className="print-sheet-wrapper"
+                style={{
+                  width: '210mm',
+                  height: '297mm',
+                  display: isSquare ? 'flex' : 'block',
+                  alignItems: isSquare ? 'center' : undefined,
+                  justifyContent: isSquare ? 'center' : undefined,
+                  pageBreakAfter: 'always',
+                  breakAfter: 'page',
+                  pageBreakInside: 'avoid',
+                  breakInside: 'avoid',
+                  boxSizing: 'border-box',
+                  background: '#ffffff',
+                  overflow: 'hidden'
+                }}
+              >
+                {renderPrintPage(pageIdx)}
+              </div>
+            );
+          });
+        }
+      })()}
+    </div>
 
       {isFormattingMode && activeFormatElement && (
         <div className="floating-format-panel no-print">
