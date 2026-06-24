@@ -116,6 +116,7 @@ body {
 
   /* Target page dimensions specifically based on document flow */
   @page {
+    size: A4 portrait;
     margin: 0;
   }
 }

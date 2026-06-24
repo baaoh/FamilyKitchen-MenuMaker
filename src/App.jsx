@@ -119,7 +119,8 @@ export default function App() {
           customBorder: '',
           textAlign: 'center',
           pageCount: 3,
-          paginationMode: 'auto'
+          paginationMode: 'auto',
+          classStyles: {}
         }
       },
       {
@@ -147,7 +148,8 @@ export default function App() {
           customBorder: '',
           textAlign: 'left',
           pageCount: 2,
-          paginationMode: 'auto'
+          paginationMode: 'auto',
+          classStyles: {}
         }
       }
     ];
@@ -229,6 +231,10 @@ export default function App() {
     document.addEventListener('mouseup', stopDrag);
   };
   
+  // Formatting Editor States
+  const [isFormattingMode, setIsFormattingMode] = useState(false);
+  const [activeFormatElement, setActiveFormatElement] = useState(null);
+
   // Project Management Input
   const [newProjectName, setNewProjectName] = useState('');
 
@@ -577,7 +583,8 @@ export default function App() {
         textAlign: 'center',
         pageCount: 1,
         passcodeHash: '',
-        paginationMode: 'auto'
+        paginationMode: 'auto',
+        classStyles: {}
       }
     };
 
@@ -816,13 +823,349 @@ export default function App() {
     fileReader.readAsText(file, "UTF-8");
   };
 
+  // --- VISUAL FORMATTING ACTIONS & RESOLVERS ---
+  const resolveStyle = (elementClass, instanceStyle = {}, id = null, subKey = null) => {
+    let classStyle = settings.classStyles?.[elementClass] || {};
+    
+    // In-progress formatting mode real-time preview (class-wide preview)
+    if (isFormattingMode && activeFormatElement && activeFormatElement.type === elementClass) {
+      classStyle = { ...classStyle, ...activeFormatElement.currentStyles };
+    }
+    
+    let merged = { ...classStyle, ...instanceStyle };
+    
+    // If this is the specific instance currently selected in the visual editor, merge its current styles as the absolute priority
+    if (isFormattingMode && activeFormatElement && activeFormatElement.type === elementClass) {
+      if (activeFormatElement.id === id && activeFormatElement.subKey === subKey) {
+        merged = { ...merged, ...activeFormatElement.currentStyles };
+      }
+    }
+    
+    return {
+      fontFamily: merged.fontFamily || undefined,
+      fontSize: merged.fontSize ? `${merged.fontSize}rem` : undefined,
+      fontWeight: merged.fontWeight || undefined,
+      fontStyle: merged.fontStyle || undefined,
+      color: merged.color || undefined,
+      textTransform: merged.textTransform || undefined,
+      marginTop: merged.marginTop !== undefined && merged.marginTop !== '' ? `${merged.marginTop}px` : undefined,
+      marginBottom: merged.marginBottom !== undefined && merged.marginBottom !== '' ? `${merged.marginBottom}px` : undefined,
+    };
+  };
+
+  const handleElementClick = (elementClass, id, subKey, instanceStyle = {}, e) => {
+    if (!isFormattingMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const activeClassStyle = settings.classStyles?.[elementClass] || {};
+    
+    setActiveFormatElement({
+      type: elementClass,
+      id: id,
+      subKey: subKey,
+      currentStyles: {
+        fontSize: instanceStyle.fontSize !== undefined ? instanceStyle.fontSize : (activeClassStyle.fontSize !== undefined ? activeClassStyle.fontSize : ''),
+        fontFamily: instanceStyle.fontFamily !== undefined ? instanceStyle.fontFamily : (activeClassStyle.fontFamily !== undefined ? activeClassStyle.fontFamily : ''),
+        color: instanceStyle.color !== undefined ? instanceStyle.color : (activeClassStyle.color !== undefined ? activeClassStyle.color : ''),
+        fontWeight: instanceStyle.fontWeight !== undefined ? instanceStyle.fontWeight : (activeClassStyle.fontWeight !== undefined ? activeClassStyle.fontWeight : ''),
+        fontStyle: instanceStyle.fontStyle !== undefined ? instanceStyle.fontStyle : (activeClassStyle.fontStyle !== undefined ? activeClassStyle.fontStyle : ''),
+        textTransform: instanceStyle.textTransform !== undefined ? instanceStyle.textTransform : (activeClassStyle.textTransform !== undefined ? activeClassStyle.textTransform : ''),
+        marginTop: instanceStyle.marginTop !== undefined ? instanceStyle.marginTop : (activeClassStyle.marginTop !== undefined ? activeClassStyle.marginTop : ''),
+        marginBottom: instanceStyle.marginBottom !== undefined ? instanceStyle.marginBottom : (activeClassStyle.marginBottom !== undefined ? activeClassStyle.marginBottom : '')
+      }
+    });
+  };
+
+  const applyClassStyle = (elementClass, field, value) => {
+    setSettings(prev => {
+      const classStyles = prev.classStyles || {};
+      const updatedClassStyle = { ...classStyles[elementClass], [field]: value };
+      if (value === '') {
+        delete updatedClassStyle[field];
+      }
+      return {
+        ...prev,
+        classStyles: {
+          ...classStyles,
+          [elementClass]: updatedClassStyle
+        }
+      };
+    });
+  };
+
+  const applyInstanceStyle = (elementClass, id, subKey, field, value) => {
+    if (id === 'restaurant') {
+      setMenuData(prev => {
+        const prevStyles = prev.styles || {};
+        const elementStyles = prevStyles[subKey] || {};
+        const updatedElementStyles = { ...elementStyles, [field]: value };
+        if (value === '') delete updatedElementStyles[field];
+        return {
+          ...prev,
+          styles: {
+            ...prevStyles,
+            [subKey]: updatedElementStyles
+          }
+        };
+      });
+    } else if (id.includes('::')) {
+      const [catId, itemId] = id.split('::');
+      setMenuData(prev => ({
+        ...prev,
+        categories: prev.categories.map(cat => {
+          if (cat.id !== catId) return cat;
+          return {
+            ...cat,
+            items: cat.items.map(item => {
+              if (item.id !== itemId) return item;
+              const prevStyles = item.styles || {};
+              const fieldStyles = prevStyles[subKey] || {};
+              const updatedFieldStyles = { ...fieldStyles, [field]: value };
+              if (value === '') delete updatedFieldStyles[field];
+              return {
+                ...item,
+                styles: {
+                  ...prevStyles,
+                  [subKey]: updatedFieldStyles
+                }
+              };
+            })
+          };
+        })
+      }));
+    } else {
+      setMenuData(prev => ({
+        ...prev,
+        categories: prev.categories.map(cat => {
+          if (cat.id !== id) return cat;
+          const prevStyles = cat.styles || {};
+          const fieldStyles = prevStyles[subKey] || {};
+          const updatedFieldStyles = { ...fieldStyles, [field]: value };
+          if (value === '') delete updatedFieldStyles[field];
+          return {
+            ...cat,
+            styles: {
+              ...prevStyles,
+              [subKey]: updatedFieldStyles
+            }
+          };
+        })
+      }));
+    }
+  };
+
+  const resetInstanceStyle = (id, subKey) => {
+    if (id === 'restaurant') {
+      setMenuData(prev => {
+        const prevStyles = prev.styles || {};
+        const nextStyles = { ...prevStyles };
+        delete nextStyles[subKey];
+        return {
+          ...prev,
+          styles: nextStyles
+        };
+      });
+    } else if (id.includes('::')) {
+      const [catId, itemId] = id.split('::');
+      setMenuData(prev => ({
+        ...prev,
+        categories: prev.categories.map(cat => {
+          if (cat.id !== catId) return cat;
+          return {
+            ...cat,
+            items: cat.items.map(item => {
+              if (item.id !== itemId) return item;
+              const prevStyles = item.styles || {};
+              const nextStyles = { ...prevStyles };
+              delete nextStyles[subKey];
+              return {
+                ...item,
+                styles: nextStyles
+              };
+            })
+          };
+        })
+      }));
+    } else {
+      setMenuData(prev => ({
+        ...prev,
+        categories: prev.categories.map(cat => {
+          if (cat.id !== id) return cat;
+          const prevStyles = cat.styles || {};
+          const nextStyles = { ...prevStyles };
+          delete nextStyles[subKey];
+          return {
+            ...cat,
+            styles: nextStyles
+          };
+        })
+      }));
+    }
+  };
+
+  const handleApplyToAll = () => {
+    if (!activeFormatElement) return;
+    const { type, currentStyles } = activeFormatElement;
+    setSettings(prev => {
+      const classStyles = prev.classStyles || {};
+      const updatedClassStyle = { ...classStyles[type], ...currentStyles };
+      Object.keys(updatedClassStyle).forEach(k => {
+        if (updatedClassStyle[k] === '') delete updatedClassStyle[k];
+      });
+      return {
+        ...prev,
+        classStyles: {
+          ...classStyles,
+          [type]: updatedClassStyle
+        }
+      };
+    });
+    showToast('Applied styles to all items of this class!');
+  };
+
+  const handleApplyToSingle = () => {
+    if (!activeFormatElement) return;
+    const { type, id, subKey, currentStyles } = activeFormatElement;
+    
+    if (id === 'restaurant') {
+      setMenuData(prev => {
+        const prevStyles = prev.styles || {};
+        const elementStyles = prevStyles[subKey] || {};
+        const updatedElementStyles = { ...elementStyles, ...currentStyles };
+        Object.keys(updatedElementStyles).forEach(k => {
+          if (updatedElementStyles[k] === '') delete updatedElementStyles[k];
+        });
+        return {
+          ...prev,
+          styles: {
+            ...prevStyles,
+            [subKey]: updatedElementStyles
+          }
+        };
+      });
+    } else if (id.includes('::')) {
+      const [catId, itemId] = id.split('::');
+      setMenuData(prev => ({
+        ...prev,
+        categories: prev.categories.map(cat => {
+          if (cat.id !== catId) return cat;
+          return {
+            ...cat,
+            items: cat.items.map(item => {
+              if (item.id !== itemId) return item;
+              const prevStyles = item.styles || {};
+              const fieldStyles = prevStyles[subKey] || {};
+              const updatedFieldStyles = { ...fieldStyles, ...currentStyles };
+              Object.keys(updatedFieldStyles).forEach(k => {
+                if (updatedFieldStyles[k] === '') delete updatedFieldStyles[k];
+              });
+              return {
+                ...item,
+                styles: {
+                  ...prevStyles,
+                  [subKey]: updatedFieldStyles
+                }
+              };
+            })
+          };
+        })
+      }));
+    } else {
+      setMenuData(prev => ({
+        ...prev,
+        categories: prev.categories.map(cat => {
+          if (cat.id !== id) return cat;
+          const prevStyles = cat.styles || {};
+          const fieldStyles = prevStyles[subKey] || {};
+          const updatedFieldStyles = { ...fieldStyles, ...currentStyles };
+          Object.keys(updatedFieldStyles).forEach(k => {
+            if (updatedFieldStyles[k] === '') delete updatedFieldStyles[k];
+          });
+          return {
+            ...cat,
+            styles: {
+              ...prevStyles,
+              [subKey]: updatedFieldStyles
+            }
+          };
+        })
+      }));
+    }
+    showToast('Applied styles to this single instance!');
+  };
+
+  const handleResetStyle = () => {
+    if (!activeFormatElement) return;
+    const { id, subKey } = activeFormatElement;
+    
+    setActiveFormatElement(prev => ({
+      ...prev,
+      currentStyles: {
+        fontSize: '',
+        fontFamily: '',
+        color: '',
+        fontWeight: '',
+        fontStyle: '',
+        textTransform: '',
+        marginTop: '',
+        marginBottom: ''
+      }
+    }));
+    
+    resetInstanceStyle(id, subKey);
+    showToast('Reset styles for this instance!');
+  };
+
+  const handleResetClassStyle = () => {
+    if (!activeFormatElement) return;
+    const { type } = activeFormatElement;
+    
+    setSettings(prev => {
+      const classStyles = { ...prev.classStyles };
+      delete classStyles[type];
+      return {
+        ...prev,
+        classStyles
+      };
+    });
+    
+    setActiveFormatElement(prev => ({
+      ...prev,
+      currentStyles: {
+        fontSize: '',
+        fontFamily: '',
+        color: '',
+        fontWeight: '',
+        fontStyle: '',
+        textTransform: '',
+        marginTop: '',
+        marginBottom: ''
+      }
+    }));
+    showToast('Reset default style for all items of this class!');
+  };
+
+  const handleStyleChange = (field, value) => {
+    if (!activeFormatElement) return;
+    setActiveFormatElement(prev => ({
+      ...prev,
+      currentStyles: {
+        ...prev.currentStyles,
+        [field]: value
+      }
+    }));
+  };
+
   // --- MENU DATA MUTATIONS ---
   const addCategory = () => {
     const newId = `cat-${Date.now()}`;
     const newCat = {
       id: newId,
       name: 'New Category',
+      enName: 'New Category (EN)',
       description: 'Describe this section of your menu',
+      enDescription: 'Describe this section of your menu (EN)',
       pageIndex: 0,
       items: []
     };
@@ -881,7 +1224,7 @@ export default function App() {
       if (sidebarCard) {
         sidebarCard.scrollIntoView({
           behavior: 'smooth',
-          block: 'nearest'
+          block: 'center'
         });
       }
     }
@@ -998,9 +1341,12 @@ export default function App() {
     const newItem = {
       id: `item-${Date.now()}`,
       name: 'New Menu Item',
+      enName: 'New Menu Item (EN)',
       description: 'Ingredients, allergens, or descriptions of flavor.',
+      enDescription: 'Ingredients, allergens, or descriptions of flavor (EN).',
       price: '10.00',
       badge: '',
+      allergens: '',
       isAvailable: true
     };
     setMenuData(prev => ({
@@ -1323,6 +1669,27 @@ export default function App() {
             </button>
           )}
 
+          <button 
+            type="button" 
+            className={`btn ${isFormattingMode ? 'btn-primary' : 'btn-secondary'} btn-sm`} 
+            onClick={() => {
+              setIsFormattingMode(!isFormattingMode);
+              if (!isFormattingMode) {
+                showToast('Entered visual formatting mode. Click on any text in the menu canvas to style it!');
+              } else {
+                setActiveFormatElement(null);
+                showToast('Exited visual formatting mode.');
+              }
+            }} 
+            style={{ 
+              background: isFormattingMode ? '#f97316' : undefined,
+              borderColor: isFormattingMode ? '#f97316' : undefined,
+              color: '#ffffff'
+            }}
+          >
+            <Palette size={14} /> {isFormattingMode ? 'Exit Format Mode' : 'Visual Format Mode'}
+          </button>
+
           <button type="button" className="btn btn-primary btn-sm" onClick={handlePrint} style={{ background: '#10b981' }}>
             <Printer size={14} /> Export PDF / Print
           </button>
@@ -1585,7 +1952,7 @@ export default function App() {
                       {expandedCategories[cat.id] && (
                         <div className="category-card-body">
                           <div className="form-group">
-                            <label className="form-label">Category Name</label>
+                            <label className="form-label">Category Name (CZ)</label>
                             <input 
                               type="text" 
                               className="form-input" 
@@ -1593,14 +1960,38 @@ export default function App() {
                               onChange={(e) => updateCategory(cat.id, 'name', e.target.value)}
                             />
                           </div>
+
+                          <div className="form-group">
+                            <label className="form-label" style={{ color: '#10b981' }}>Category Name (EN)</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              value={cat.enName || ''}
+                              placeholder="English translation"
+                              onChange={(e) => updateCategory(cat.id, 'enName', e.target.value)}
+                              style={{ borderColor: 'rgba(16, 185, 129, 0.3)' }}
+                            />
+                          </div>
                           
-                          <div className="form-group" style={{ marginBottom: '10px' }}>
-                            <label className="form-label">Category Description (Optional)</label>
+                          <div className="form-group">
+                            <label className="form-label">Category Description (Optional) (CZ)</label>
                             <input 
                               type="text" 
                               className="form-input" 
                               value={cat.description}
                               onChange={(e) => updateCategory(cat.id, 'description', e.target.value)}
+                            />
+                          </div>
+
+                          <div className="form-group" style={{ marginBottom: '10px' }}>
+                            <label className="form-label" style={{ color: '#10b981' }}>Category Description (Optional) (EN)</label>
+                            <input 
+                              type="text" 
+                              className="form-input" 
+                              value={cat.enDescription || ''}
+                              placeholder="English description translation"
+                              onChange={(e) => updateCategory(cat.id, 'enDescription', e.target.value)}
+                              style={{ borderColor: 'rgba(16, 185, 129, 0.3)' }}
                             />
                           </div>
 
@@ -1669,32 +2060,56 @@ export default function App() {
                           <div className="items-list">
                             {cat.items.map((item, itemIdx) => (
                               <div key={item.id} className="item-editor-card">
-                                <div className="item-editor-row">
+                                <div className="item-editor-row" style={{ flexDirection: 'column', gap: '6px' }}>
                                   <input 
                                     type="text" 
                                     className="form-input" 
                                     style={{ flex: 1, fontWeight: 'bold' }} 
                                     value={item.name} 
-                                    placeholder="Dish name"
+                                    placeholder="Dish name (CZ)"
                                     onChange={(e) => updateItem(cat.id, item.id, 'name', e.target.value)}
                                   />
-                                </div>
-                                <div className="item-editor-row">
-                                  <textarea 
-                                    className="form-input" 
-                                    value={item.description} 
-                                    placeholder="Description / Ingredients / Translation"
-                                    onChange={(e) => updateItem(cat.id, item.id, 'description', e.target.value)}
-                                  />
-                                </div>
-                                <div className="item-editor-row" style={{ alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                                   <input 
                                     type="text" 
                                     className="form-input" 
-                                    style={{ flex: 2, padding: '6px 8px', fontSize: '0.75rem' }}
+                                    style={{ flex: 1, fontWeight: 'bold', borderColor: 'rgba(16, 185, 129, 0.3)' }} 
+                                    value={item.enName || ''} 
+                                    placeholder="Dish name (EN)"
+                                    onChange={(e) => updateItem(cat.id, item.id, 'enName', e.target.value)}
+                                  />
+                                </div>
+                                <div className="item-editor-row" style={{ flexDirection: 'column', gap: '6px' }}>
+                                  <textarea 
+                                    className="form-input" 
+                                    value={item.description} 
+                                    placeholder="Description / Ingredients (CZ)"
+                                    onChange={(e) => updateItem(cat.id, item.id, 'description', e.target.value)}
+                                    style={{ fontSize: '0.8rem' }}
+                                  />
+                                  <textarea 
+                                    className="form-input" 
+                                    value={item.enDescription || ''} 
+                                    placeholder="Description / Ingredients (EN)"
+                                    onChange={(e) => updateItem(cat.id, item.id, 'enDescription', e.target.value)}
+                                    style={{ fontSize: '0.8rem', borderColor: 'rgba(16, 185, 129, 0.3)' }}
+                                  />
+                                </div>
+                                <div className="item-editor-row" style={{ alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                                  <input 
+                                    type="text" 
+                                    className="form-input" 
+                                    style={{ flex: 1.5, padding: '6px 8px', fontSize: '0.75rem' }}
                                     value={item.badge} 
                                     placeholder="Badge"
                                     onChange={(e) => updateItem(cat.id, item.id, 'badge', e.target.value)}
+                                  />
+                                  <input 
+                                    type="text" 
+                                    className="form-input" 
+                                    style={{ flex: 1.2, padding: '6px 8px', fontSize: '0.75rem', borderColor: 'rgba(16, 185, 129, 0.3)' }}
+                                    value={item.allergens || ''} 
+                                    placeholder="Allergens"
+                                    onChange={(e) => updateItem(cat.id, item.id, 'allergens', e.target.value)}
                                   />
                                   <input 
                                     type="text" 
@@ -2633,9 +3048,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* DYNAMIC CANVAS PREVIEW AREA */}
           <div 
-            className="preview-canvas" 
+            className={`preview-canvas ${isFormattingMode ? 'formatting-mode-active' : ''}`}
             onScroll={handleCanvasScroll}
             onMouseEnter={() => { scrollOwnerRef.current = 'canvas'; }}
             onWheel={() => { scrollOwnerRef.current = 'canvas'; }}
@@ -2765,8 +3179,22 @@ export default function App() {
                       {/* 1. Header block (Only on Page 1) */}
                       {pageIdx === 0 ? (
                         <header className="menu-header-block">
-                          <h2 className="menu-title">{menuData.restaurantName || "Restaurant Name"}</h2>
-                          {menuData.subtitle && <p className="menu-subtitle">{menuData.subtitle}</p>}
+                          <h2 
+                            className={`menu-title ${activeFormatElement && activeFormatElement.type === 'menu-title' ? 'element-selected' : ''}`}
+                            style={resolveStyle('menu-title', menuData.styles?.title, 'restaurant', 'title')}
+                            onClick={(e) => handleElementClick('menu-title', 'restaurant', 'title', menuData.styles?.title, e)}
+                          >
+                            {menuData.restaurantName || "Restaurant Name"}
+                          </h2>
+                          {menuData.subtitle && (
+                            <p 
+                              className={`menu-subtitle ${activeFormatElement && activeFormatElement.type === 'menu-subtitle' ? 'element-selected' : ''}`}
+                              style={resolveStyle('menu-subtitle', menuData.styles?.subtitle, 'restaurant', 'subtitle')}
+                              onClick={(e) => handleElementClick('menu-subtitle', 'restaurant', 'subtitle', menuData.styles?.subtitle, e)}
+                            >
+                              {menuData.subtitle}
+                            </p>
+                          )}
                           <div className="menu-header-divider"></div>
                         </header>
                       ) : (
@@ -2797,7 +3225,11 @@ export default function App() {
                               >
                                 {/* Category Header */}
                                 <div className="menu-category-header">
-                                  <h3 className="menu-category-name">
+                                  <h3 
+                                    className={`menu-category-name ${activeFormatElement && activeFormatElement.type === 'menu-category-name' && activeFormatElement.id === category.id ? 'element-selected' : ''}`}
+                                    style={resolveStyle('menu-category-name', category.styles?.name, category.id, 'name')}
+                                    onClick={(e) => handleElementClick('menu-category-name', category.id, 'name', category.styles?.name, e)}
+                                  >
                                     {category.name}
                                     {isCatOverflowing && (
                                       <span className="no-print cat-overflow-badge" title="This category exceeds the bottom margin of the page and is cut off.">
@@ -2805,7 +3237,33 @@ export default function App() {
                                       </span>
                                     )}
                                   </h3>
-                                  {category.description && <p className="menu-category-desc">{category.description}</p>}
+                                  {category.enName && (
+                                    <h4 
+                                      className={`menu-category-name-en ${activeFormatElement && activeFormatElement.type === 'menu-category-name-en' && activeFormatElement.id === category.id ? 'element-selected' : ''}`}
+                                      style={resolveStyle('menu-category-name-en', category.styles?.nameEn, category.id, 'nameEn')}
+                                      onClick={(e) => handleElementClick('menu-category-name-en', category.id, 'nameEn', category.styles?.nameEn, e)}
+                                    >
+                                      {category.enName}
+                                    </h4>
+                                  )}
+                                  {category.description && (
+                                    <p 
+                                      className={`menu-category-desc ${activeFormatElement && activeFormatElement.type === 'menu-category-desc' && activeFormatElement.id === category.id ? 'element-selected' : ''}`}
+                                      style={resolveStyle('menu-category-desc', category.styles?.description, category.id, 'description')}
+                                      onClick={(e) => handleElementClick('menu-category-desc', category.id, 'description', category.styles?.description, e)}
+                                    >
+                                      {category.description}
+                                    </p>
+                                  )}
+                                  {category.enDescription && (
+                                    <p 
+                                      className={`menu-category-desc-en ${activeFormatElement && activeFormatElement.type === 'menu-category-desc-en' && activeFormatElement.id === category.id ? 'element-selected' : ''}`}
+                                      style={resolveStyle('menu-category-desc-en', category.styles?.descriptionEn, category.id, 'descriptionEn')}
+                                      onClick={(e) => handleElementClick('menu-category-desc-en', category.id, 'descriptionEn', category.styles?.descriptionEn, e)}
+                                    >
+                                      {category.enDescription}
+                                    </p>
+                                  )}
                                   
                                   {/* Divider Style */}
                                   <div className="category-divider">
@@ -2855,13 +3313,70 @@ export default function App() {
                                           </div>
                                         )}
                                         <div className="item-name-group" style={{ justifyContent: 'center' }}>
-                                          <span className="item-name">{item.name}</span>
-                                          {item.badge && <span className="item-badge" style={{ marginLeft: '6px' }}>{item.badge}</span>}
+                                          <span 
+                                            className={`item-name ${activeFormatElement && activeFormatElement.type === 'item-name' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                            style={resolveStyle('item-name', item.styles?.name, `${category.id}::${item.id}`, 'name')}
+                                            onClick={(e) => handleElementClick('item-name', `${category.id}::${item.id}`, 'name', item.styles?.name, e)}
+                                          >
+                                            {item.name}
+                                          </span>
+                                          {item.allergens && (
+                                            <span 
+                                              className={`item-allergens ${activeFormatElement && activeFormatElement.type === 'item-allergens' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                              style={{ marginLeft: '6px', ...resolveStyle('item-allergens', item.styles?.allergens, `${category.id}::${item.id}`, 'allergens') }}
+                                              onClick={(e) => handleElementClick('item-allergens', `${category.id}::${item.id}`, 'allergens', item.styles?.allergens, e)}
+                                            >
+                                              ({item.allergens})
+                                            </span>
+                                          )}
+                                          {item.badge && (
+                                            <span 
+                                              className={`item-badge ${activeFormatElement && activeFormatElement.type === 'item-badge' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                              style={{ marginLeft: '6px', ...resolveStyle('item-badge', item.styles?.badge, `${category.id}::${item.id}`, 'badge') }}
+                                              onClick={(e) => handleElementClick('item-badge', `${category.id}::${item.id}`, 'badge', item.styles?.badge, e)}
+                                            >
+                                              {item.badge}
+                                            </span>
+                                          )}
                                         </div>
-                                        {item.description && (
-                                          <p className="item-description" style={{ marginTop: '2px', marginBottom: '4px' }}>{item.description}</p>
+
+                                        {item.enName && (
+                                          <div 
+                                            className={`item-name-en ${activeFormatElement && activeFormatElement.type === 'item-name-en' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                            style={resolveStyle('item-name-en', item.styles?.nameEn, `${category.id}::${item.id}`, 'nameEn')}
+                                            onClick={(e) => handleElementClick('item-name-en', `${category.id}::${item.id}`, 'nameEn', item.styles?.nameEn, e)}
+                                          >
+                                            {item.enName}
+                                          </div>
                                         )}
-                                        <span className="item-price" style={{ color: 'var(--menu-accent)', fontWeight: 700 }}>{item.price}</span>
+
+                                        {item.description && (
+                                          <p 
+                                            className={`item-description ${activeFormatElement && activeFormatElement.type === 'item-description' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                            style={{ marginTop: '2px', marginBottom: '4px', ...resolveStyle('item-description', item.styles?.description, `${category.id}::${item.id}`, 'description') }}
+                                            onClick={(e) => handleElementClick('item-description', `${category.id}::${item.id}`, 'description', item.styles?.description, e)}
+                                          >
+                                            {item.description}
+                                          </p>
+                                        )}
+
+                                        {item.enDescription && (
+                                          <p 
+                                            className={`item-description-en ${activeFormatElement && activeFormatElement.type === 'item-description-en' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                            style={resolveStyle('item-description-en', item.styles?.descriptionEn, `${category.id}::${item.id}`, 'descriptionEn')}
+                                            onClick={(e) => handleElementClick('item-description-en', `${category.id}::${item.id}`, 'descriptionEn', item.styles?.descriptionEn, e)}
+                                          >
+                                            {item.enDescription}
+                                          </p>
+                                        )}
+
+                                        <span 
+                                          className={`item-price ${activeFormatElement && activeFormatElement.type === 'item-price' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                          style={{ color: 'var(--menu-accent)', fontWeight: 700, ...resolveStyle('item-price', item.styles?.price, `${category.id}::${item.id}`, 'price') }}
+                                          onClick={(e) => handleElementClick('item-price', `${category.id}::${item.id}`, 'price', item.styles?.price, e)}
+                                        >
+                                          {item.price}
+                                        </span>
                                       </div>
                                     ) : (
                                       // Left / Right Spacing Layout (Canva Drinks Style)
@@ -2888,14 +3403,70 @@ export default function App() {
                                         )}
                                         <div className="item-main-line">
                                           <div className="item-name-group">
-                                            <span className="item-name">{item.name}</span>
-                                            {item.badge && <span className="item-badge">{item.badge}</span>}
+                                            <span 
+                                              className={`item-name ${activeFormatElement && activeFormatElement.type === 'item-name' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                              style={resolveStyle('item-name', item.styles?.name, `${category.id}::${item.id}`, 'name')}
+                                              onClick={(e) => handleElementClick('item-name', `${category.id}::${item.id}`, 'name', item.styles?.name, e)}
+                                            >
+                                              {item.name}
+                                            </span>
+                                            {item.allergens && (
+                                              <span 
+                                                className={`item-allergens ${activeFormatElement && activeFormatElement.type === 'item-allergens' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                                style={{ marginLeft: '6px', ...resolveStyle('item-allergens', item.styles?.allergens, `${category.id}::${item.id}`, 'allergens') }}
+                                                onClick={(e) => handleElementClick('item-allergens', `${category.id}::${item.id}`, 'allergens', item.styles?.allergens, e)}
+                                              >
+                                                ({item.allergens})
+                                              </span>
+                                            )}
+                                            {item.badge && (
+                                              <span 
+                                                className={`item-badge ${activeFormatElement && activeFormatElement.type === 'item-badge' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                                style={resolveStyle('item-badge', item.styles?.badge, `${category.id}::${item.id}`, 'badge')}
+                                                onClick={(e) => handleElementClick('item-badge', `${category.id}::${item.id}`, 'badge', item.styles?.badge, e)}
+                                              >
+                                                {item.badge}
+                                              </span>
+                                            )}
                                           </div>
                                           {settings.showDots && <div className="price-leader-dots"></div>}
-                                          <span className="item-price">{item.price}</span>
+                                          <span 
+                                            className={`item-price ${activeFormatElement && activeFormatElement.type === 'item-price' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                            style={resolveStyle('item-price', item.styles?.price, `${category.id}::${item.id}`, 'price')}
+                                            onClick={(e) => handleElementClick('item-price', `${category.id}::${item.id}`, 'price', item.styles?.price, e)}
+                                          >
+                                            {item.price}
+                                          </span>
                                         </div>
+
+                                        {item.enName && (
+                                          <div 
+                                            className={`item-name-en ${activeFormatElement && activeFormatElement.type === 'item-name-en' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                            style={resolveStyle('item-name-en', item.styles?.nameEn, `${category.id}::${item.id}`, 'nameEn')}
+                                            onClick={(e) => handleElementClick('item-name-en', `${category.id}::${item.id}`, 'nameEn', item.styles?.nameEn, e)}
+                                          >
+                                            {item.enName}
+                                          </div>
+                                        )}
+
                                         {item.description && (
-                                          <p className="item-description">{item.description}</p>
+                                          <p 
+                                            className={`item-description ${activeFormatElement && activeFormatElement.type === 'item-description' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                            style={resolveStyle('item-description', item.styles?.description, `${category.id}::${item.id}`, 'description')}
+                                            onClick={(e) => handleElementClick('item-description', `${category.id}::${item.id}`, 'description', item.styles?.description, e)}
+                                          >
+                                            {item.description}
+                                          </p>
+                                        )}
+
+                                        {item.enDescription && (
+                                          <p 
+                                            className={`item-description-en ${activeFormatElement && activeFormatElement.type === 'item-description-en' && activeFormatElement.id === `${category.id}::${item.id}` ? 'element-selected' : ''}`}
+                                            style={resolveStyle('item-description-en', item.styles?.descriptionEn, `${category.id}::${item.id}`, 'descriptionEn')}
+                                            onClick={(e) => handleElementClick('item-description-en', `${category.id}::${item.id}`, 'descriptionEn', item.styles?.descriptionEn, e)}
+                                          >
+                                            {item.enDescription}
+                                          </p>
                                         )}
                                       </div>
                                     )
@@ -2911,7 +3482,13 @@ export default function App() {
                       {pageIdx === (settings.pageCount || 1) - 1 && menuData.footer && (
                         <footer className="menu-footer-block">
                           <div className="menu-footer-divider"></div>
-                          <p className="menu-footer-text">{menuData.footer}</p>
+                          <p 
+                            className={`menu-footer-text ${activeFormatElement && activeFormatElement.type === 'menu-footer-text' ? 'element-selected' : ''}`}
+                            style={resolveStyle('menu-footer-text', menuData.styles?.footer, 'restaurant', 'footer')}
+                            onClick={(e) => handleElementClick('menu-footer-text', 'restaurant', 'footer', menuData.styles?.footer, e)}
+                          >
+                            {menuData.footer}
+                          </p>
                         </footer>
                       )}
                     </div>
@@ -3064,26 +3641,55 @@ export default function App() {
           (c.pageIndex !== undefined ? c.pageIndex : 0) === pageIdx
         );
 
+        const currentWidth = parseFloat(currentSizeObj.width);
+        const currentHeight = parseFloat(currentSizeObj.height);
+        const isSmallerThanA4 = settings.pageSize !== 'a4';
+        
+        let scaleFactor = 1.0;
+        if (isSmallerThanA4) {
+          const scaleW = 210 / currentWidth;
+          const scaleH = 297 / currentHeight;
+          scaleFactor = Math.min(scaleW, scaleH);
+        }
+
         return (
           <div 
             key={pageIdx}
             className="menu-page-wrapper" 
             style={{
-              width: currentSizeObj.width,
-              height: currentSizeObj.height,
+              width: isSmallerThanA4 ? '210mm' : currentSizeObj.width,
+              height: isSmallerThanA4 ? '297mm' : currentSizeObj.height,
               position: 'relative',
               margin: '0 auto',
-              ...getThemeStyles()
+              background: '#ffffff',
+              display: isSmallerThanA4 ? 'flex' : 'block',
+              alignItems: isSmallerThanA4 ? 'center' : undefined,
+              justifyContent: isSmallerThanA4 ? 'center' : undefined,
+              boxShadow: 'none',
+              overflow: 'hidden'
             }}
           >
+            <div
+              className="print-scale-wrapper"
+              style={{
+                width: currentSizeObj.width,
+                height: currentSizeObj.height,
+                position: 'relative',
+                transform: isSmallerThanA4 ? `scale(${scaleFactor})` : 'none',
+                transformOrigin: 'center center',
+                flexShrink: 0,
+                boxSizing: 'border-box',
+                ...getThemeStyles()
+              }}
+            >
               {settings.borderStyle !== 'none' && <div className="menu-border-decorator"></div>}
               {settings.borderStyle === 'double' && <div className="menu-border-double"></div>}
               
               <div className="menu-page-content">
                 {pageIdx === 0 ? (
                   <header className="menu-header-block">
-                    <h2 className="menu-title">{menuData.restaurantName}</h2>
-                    {menuData.subtitle && <p className="menu-subtitle">{menuData.subtitle}</p>}
+                    <h2 className="menu-title" style={resolveStyle('menu-title', menuData.styles?.title)}>{menuData.restaurantName}</h2>
+                    {menuData.subtitle && <p className="menu-subtitle" style={resolveStyle('menu-subtitle', menuData.styles?.subtitle)}>{menuData.subtitle}</p>}
                     <div className="menu-header-divider"></div>
                   </header>
                 ) : (
@@ -3105,8 +3711,36 @@ export default function App() {
                           textAlign: categoryAlign === 'center' ? 'center' : 'left'
                         }}>
                           <div className="menu-category-header">
-                            <h3 className="menu-category-name">{category.name}</h3>
-                            {category.description && <p className="menu-category-desc">{category.description}</p>}
+                            <h3 
+                              className="menu-category-name"
+                              style={resolveStyle('menu-category-name', category.styles?.name, category.id, 'name')}
+                            >
+                              {category.name}
+                            </h3>
+                            {category.enName && (
+                              <h4 
+                                className="menu-category-name-en"
+                                style={resolveStyle('menu-category-name-en', category.styles?.nameEn, category.id, 'nameEn')}
+                              >
+                                {category.enName}
+                              </h4>
+                            )}
+                            {category.description && (
+                              <p 
+                                className="menu-category-desc"
+                                style={resolveStyle('menu-category-desc', category.styles?.description, category.id, 'description')}
+                              >
+                                {category.description}
+                              </p>
+                            )}
+                            {category.enDescription && (
+                              <p 
+                                className="menu-category-desc-en"
+                                style={resolveStyle('menu-category-desc-en', category.styles?.descriptionEn, category.id, 'descriptionEn')}
+                              >
+                                {category.enDescription}
+                              </p>
+                            )}
                             <div className="category-divider">
                               {activeThemeObj.dividerStyle === 'line' && <div className="divider-line-solid"></div>}
                               {activeThemeObj.dividerStyle === 'dots' && <div className="divider-line-dots">...</div>}
@@ -3152,13 +3786,63 @@ export default function App() {
                                     </div>
                                   )}
                                   <div className="item-name-group" style={{ justifyContent: 'center' }}>
-                                    <span className="item-name">{item.name}</span>
-                                    {item.badge && <span className="item-badge" style={{ marginLeft: '6px' }}>{item.badge}</span>}
+                                    <span 
+                                      className="item-name"
+                                      style={resolveStyle('item-name', item.styles?.name, `${category.id}::${item.id}`, 'name')}
+                                    >
+                                      {item.name}
+                                    </span>
+                                    {item.allergens && (
+                                      <span 
+                                        className="item-allergens"
+                                        style={{ marginLeft: '6px', ...resolveStyle('item-allergens', item.styles?.allergens, `${category.id}::${item.id}`, 'allergens') }}
+                                      >
+                                        ({item.allergens})
+                                      </span>
+                                    )}
+                                    {item.badge && (
+                                      <span 
+                                        className="item-badge"
+                                        style={{ marginLeft: '6px', ...resolveStyle('item-badge', item.styles?.badge, `${category.id}::${item.id}`, 'badge') }}
+                                      >
+                                        {item.badge}
+                                      </span>
+                                    )}
                                   </div>
-                                  {item.description && (
-                                    <p className="item-description" style={{ marginTop: '2px', marginBottom: '4px' }}>{item.description}</p>
+
+                                  {item.enName && (
+                                    <div 
+                                      className="item-name-en"
+                                      style={resolveStyle('item-name-en', item.styles?.nameEn, `${category.id}::${item.id}`, 'nameEn')}
+                                    >
+                                      {item.enName}
+                                    </div>
                                   )}
-                                  <span className="item-price" style={{ color: 'var(--menu-accent)', fontWeight: 700 }}>{item.price}</span>
+
+                                  {item.description && (
+                                    <p 
+                                      className="item-description"
+                                      style={{ marginTop: '2px', marginBottom: '4px', ...resolveStyle('item-description', item.styles?.description, `${category.id}::${item.id}`, 'description') }}
+                                    >
+                                      {item.description}
+                                    </p>
+                                  )}
+
+                                  {item.enDescription && (
+                                    <p 
+                                      className="item-description-en"
+                                      style={resolveStyle('item-description-en', item.styles?.descriptionEn, `${category.id}::${item.id}`, 'descriptionEn')}
+                                    >
+                                      {item.enDescription}
+                                    </p>
+                                  )}
+
+                                  <span 
+                                    className="item-price"
+                                    style={{ color: 'var(--menu-accent)', fontWeight: 700, ...resolveStyle('item-price', item.styles?.price, `${category.id}::${item.id}`, 'price') }}
+                                  >
+                                    {item.price}
+                                  </span>
                                 </div>
                               ) : (
                                 <div 
@@ -3184,14 +3868,63 @@ export default function App() {
                                   )}
                                   <div className="item-main-line">
                                     <div className="item-name-group">
-                                      <span className="item-name">{item.name}</span>
-                                      {item.badge && <span className="item-badge">{item.badge}</span>}
+                                      <span 
+                                        className="item-name"
+                                        style={resolveStyle('item-name', item.styles?.name, `${category.id}::${item.id}`, 'name')}
+                                      >
+                                        {item.name}
+                                      </span>
+                                      {item.allergens && (
+                                        <span 
+                                          className="item-allergens"
+                                          style={{ marginLeft: '6px', ...resolveStyle('item-allergens', item.styles?.allergens, `${category.id}::${item.id}`, 'allergens') }}
+                                        >
+                                          ({item.allergens})
+                                        </span>
+                                      )}
+                                      {item.badge && (
+                                        <span 
+                                          className="item-badge"
+                                          style={resolveStyle('item-badge', item.styles?.badge, `${category.id}::${item.id}`, 'badge')}
+                                        >
+                                          {item.badge}
+                                        </span>
+                                      )}
                                     </div>
                                     {settings.showDots && <div className="price-leader-dots"></div>}
-                                    <span className="item-price">{item.price}</span>
+                                    <span 
+                                      className="item-price"
+                                      style={resolveStyle('item-price', item.styles?.price, `${category.id}::${item.id}`, 'price')}
+                                    >
+                                      {item.price}
+                                    </span>
                                   </div>
+
+                                  {item.enName && (
+                                    <div 
+                                      className="item-name-en"
+                                      style={resolveStyle('item-name-en', item.styles?.nameEn, `${category.id}::${item.id}`, 'nameEn')}
+                                    >
+                                      {item.enName}
+                                    </div>
+                                  )}
+
                                   {item.description && (
-                                    <p className="item-description">{item.description}</p>
+                                    <p 
+                                      className="item-description"
+                                      style={resolveStyle('item-description', item.styles?.description, `${category.id}::${item.id}`, 'description')}
+                                    >
+                                      {item.description}
+                                    </p>
+                                  )}
+
+                                  {item.enDescription && (
+                                    <p 
+                                      className="item-description-en"
+                                      style={resolveStyle('item-description-en', item.styles?.descriptionEn, `${category.id}::${item.id}`, 'descriptionEn')}
+                                    >
+                                      {item.enDescription}
+                                    </p>
                                   )}
                                 </div>
                               )
@@ -3206,14 +3939,209 @@ export default function App() {
                 {pageIdx === (settings.pageCount || 1) - 1 && menuData.footer && (
                   <footer className="menu-footer-block">
                     <div className="menu-footer-divider"></div>
-                    <p className="menu-footer-text">{menuData.footer}</p>
+                    <p 
+                      className="menu-footer-text"
+                      style={resolveStyle('menu-footer-text', menuData.styles?.footer, 'restaurant', 'footer')}
+                    >
+                      {menuData.footer}
+                    </p>
                   </footer>
                 )}
               </div>
             </div>
-          );
-        })}
+          </div>
+        );
+      })}
       </div>
+
+      {isFormattingMode && activeFormatElement && (
+        <div className="floating-format-panel no-print">
+          <div className="floating-format-header">
+            <span className="floating-format-title">
+              Format: {activeFormatElement.type.replace('menu-', '').replace('item-', '')}
+            </span>
+            <button 
+              type="button"
+              className="floating-format-close" 
+              onClick={() => setActiveFormatElement(null)}
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="floating-format-content">
+            {/* Font Size Slider */}
+            <div className="floating-format-row">
+              <label className="floating-format-label">
+                Font Size
+                <span className="floating-format-value">
+                  {activeFormatElement.currentStyles.fontSize ? `${activeFormatElement.currentStyles.fontSize}rem` : 'Default'}
+                </span>
+              </label>
+              <input 
+                type="range" 
+                min="0.5" 
+                max="4.0" 
+                step="0.05" 
+                className="floating-format-slider"
+                value={activeFormatElement.currentStyles.fontSize || 1.0}
+                onChange={(e) => handleStyleChange('fontSize', e.target.value)}
+              />
+            </div>
+
+            {/* Font Style Buttons */}
+            <div className="floating-format-row">
+              <label className="floating-format-label">Font Style</label>
+              <div className="formatting-btn-group">
+                <button 
+                  type="button"
+                  className={`formatting-btn ${activeFormatElement.currentStyles.fontStyle !== 'italic' ? 'active' : ''}`}
+                  onClick={() => handleStyleChange('fontStyle', 'normal')}
+                >
+                  Normal
+                </button>
+                <button 
+                  type="button"
+                  className={`formatting-btn ${activeFormatElement.currentStyles.fontStyle === 'italic' ? 'active' : ''}`}
+                  onClick={() => handleStyleChange('fontStyle', 'italic')}
+                >
+                  Italic
+                </button>
+              </div>
+            </div>
+
+            {/* Font Weight Buttons */}
+            <div className="floating-format-row">
+              <label className="floating-format-label">Font Weight</label>
+              <div className="formatting-btn-group">
+                <button 
+                  type="button"
+                  className={`formatting-btn ${(!activeFormatElement.currentStyles.fontWeight || activeFormatElement.currentStyles.fontWeight === 'normal') ? 'active' : ''}`}
+                  onClick={() => handleStyleChange('fontWeight', 'normal')}
+                >
+                  Normal
+                </button>
+                <button 
+                  type="button"
+                  className={`formatting-btn ${(activeFormatElement.currentStyles.fontWeight === 'bold' || activeFormatElement.currentStyles.fontWeight === '700') ? 'active' : ''}`}
+                  onClick={() => handleStyleChange('fontWeight', 'bold')}
+                >
+                  Bold
+                </button>
+              </div>
+            </div>
+
+            {/* Color Picker Row */}
+            <div className="floating-format-row">
+              <label className="floating-format-label">Text Color</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input 
+                  type="color" 
+                  style={{
+                    border: 'none',
+                    outline: 'none',
+                    background: 'none',
+                    width: '36px',
+                    height: '36px',
+                    cursor: 'pointer',
+                    padding: 0
+                  }}
+                  value={activeFormatElement.currentStyles.color || '#000000'}
+                  onChange={(e) => handleStyleChange('color', e.target.value)}
+                />
+                <input 
+                  type="text" 
+                  className="form-control"
+                  style={{
+                    flex: 1,
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: '#ffffff',
+                    fontSize: '0.75rem',
+                    padding: '6px 8px',
+                    borderRadius: '6px'
+                  }}
+                  placeholder="Hex color e.g. #c5a880"
+                  value={activeFormatElement.currentStyles.color || ''}
+                  onChange={(e) => handleStyleChange('color', e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Margin Top Slider */}
+            <div className="floating-format-row">
+              <label className="floating-format-label">
+                Margin Top
+                <span className="floating-format-value">
+                  {activeFormatElement.currentStyles.marginTop !== undefined && activeFormatElement.currentStyles.marginTop !== '' ? `${activeFormatElement.currentStyles.marginTop}px` : 'Default'}
+                </span>
+              </label>
+              <input 
+                type="range" 
+                min="-10" 
+                max="40" 
+                step="1" 
+                className="floating-format-slider"
+                value={activeFormatElement.currentStyles.marginTop !== undefined && activeFormatElement.currentStyles.marginTop !== '' ? activeFormatElement.currentStyles.marginTop : 0}
+                onChange={(e) => handleStyleChange('marginTop', e.target.value === '0' ? '' : parseInt(e.target.value))}
+              />
+            </div>
+
+            {/* Margin Bottom Slider */}
+            <div className="floating-format-row">
+              <label className="floating-format-label">
+                Margin Bottom
+                <span className="floating-format-value">
+                  {activeFormatElement.currentStyles.marginBottom !== undefined && activeFormatElement.currentStyles.marginBottom !== '' ? `${activeFormatElement.currentStyles.marginBottom}px` : 'Default'}
+                </span>
+              </label>
+              <input 
+                type="range" 
+                min="-10" 
+                max="40" 
+                step="1" 
+                className="floating-format-slider"
+                value={activeFormatElement.currentStyles.marginBottom !== undefined && activeFormatElement.currentStyles.marginBottom !== '' ? activeFormatElement.currentStyles.marginBottom : 0}
+                onChange={(e) => handleStyleChange('marginBottom', e.target.value === '0' ? '' : parseInt(e.target.value))}
+              />
+            </div>
+          </div>
+
+          <div className="floating-format-footer">
+            <button 
+              type="button"
+              className="floating-format-btn-primary"
+              onClick={handleApplyToAll}
+            >
+              Apply to All (Global Class)
+            </button>
+            <button 
+              type="button"
+              className="floating-format-btn-secondary"
+              onClick={handleApplyToSingle}
+            >
+              Apply to Single Instance
+            </button>
+            <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+              <button 
+                type="button"
+                className="floating-format-btn-secondary"
+                style={{ flex: 1, fontSize: '0.68rem', padding: '4px 6px' }}
+                onClick={handleResetStyle}
+              >
+                Reset Instance
+              </button>
+              <button 
+                type="button"
+                className="floating-format-btn-secondary"
+                style={{ flex: 1, fontSize: '0.68rem', padding: '4px 6px' }}
+                onClick={handleResetClassStyle}
+              >
+                Reset Class
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
