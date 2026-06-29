@@ -669,6 +669,7 @@ input:checked + .slider-toggle:before {
   flex-direction: column;
   justify-content: space-between;
   padding: var(--page-padding, 25px);
+  padding-left: calc(var(--page-padding, 25px) + var(--binding-offset, 10mm));
   position: relative;
 }
 
@@ -676,7 +677,7 @@ input:checked + .slider-toggle:before {
 .menu-border-decorator {
   position: absolute;
   top: 10px;
-  left: 10px;
+  left: calc(10px + var(--binding-offset, 10mm));
   right: 10px;
   bottom: 10px;
   border: var(--border-width, 1px) var(--border-style, solid) var(--menu-border, #e5e5e5);
@@ -687,7 +688,7 @@ input:checked + .slider-toggle:before {
 .menu-border-double {
   position: absolute;
   top: 13px;
-  left: 13px;
+  left: calc(13px + var(--binding-offset, 10mm));
   right: 13px;
   bottom: 13px;
   border: 1px solid var(--menu-border, #e5e5e5);

@@ -103,6 +103,7 @@ export default function App() {
           theme: 'centered-zen',
           columns: 1,
           pagePadding: 35,
+          bindingOffset: 10,
           categoryGap: 24,
           itemGap: 14,
           titleSize: 2.2,
@@ -132,6 +133,7 @@ export default function App() {
           theme: 'modern-drinks',
           columns: 1,
           pagePadding: 25,
+          bindingOffset: 10,
           categoryGap: 20,
           itemGap: 10,
           titleSize: 2.0,
@@ -564,6 +566,7 @@ export default function App() {
         theme: 'centered-zen',
         columns: 1,
         pagePadding: 35,
+        bindingOffset: 10,
         categoryGap: 24,
         itemGap: 14,
         titleSize: 2.2,
@@ -654,6 +657,7 @@ export default function App() {
         pageSize: settings.pageSize,
         columns: settings.columns,
         pagePadding: settings.pagePadding,
+        bindingOffset: settings.bindingOffset !== undefined ? settings.bindingOffset : 10,
         categoryGap: settings.categoryGap,
         itemGap: settings.itemGap,
         titleSize: settings.titleSize,
@@ -1442,6 +1446,7 @@ export default function App() {
     const baseStyles = { ...themePreset.styles };
 
     baseStyles['--page-padding'] = `${settings.pagePadding}px`;
+    baseStyles['--binding-offset'] = `${settings.bindingOffset !== undefined ? settings.bindingOffset : 10}mm`;
     baseStyles['--category-gap'] = `${settings.categoryGap}px`;
     baseStyles['--item-gap'] = `${settings.itemGap}px`;
     
@@ -2736,6 +2741,21 @@ export default function App() {
                       max="80" 
                       value={settings.pagePadding}
                       onChange={(e) => setSettings(prev => ({ ...prev, pagePadding: parseInt(e.target.value) }))}
+                    />
+                  </div>
+
+                  <div className="slider-group">
+                    <div className="form-label">
+                      <span>Binding Left Offset</span>
+                      <span className="value">{settings.bindingOffset !== undefined ? settings.bindingOffset : 10}mm</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      className="range-slider" 
+                      min="0" 
+                      max="40" 
+                      value={settings.bindingOffset !== undefined ? settings.bindingOffset : 10}
+                      onChange={(e) => setSettings(prev => ({ ...prev, bindingOffset: parseInt(e.target.value) }))}
                     />
                   </div>
 
